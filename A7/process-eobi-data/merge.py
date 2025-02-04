@@ -93,19 +93,6 @@ def main():
     base_date = datetime(int(date[:4]), int(date[4:6]), int(date[6:]))
 
     outfile = "merged/"+date+"-"+instrument+"-"+security+".csv"
-    outlobster = "merged/"+date+"-"+instrument+"-"+security+"_lob.csv"
-
-    order_book = {
-        "bids": {},
-        "asks": {},
-    }
-    levels = 30
-
-    lobster_header = ["Time"] + [
-        f"{side} Price {level},{side} Volume {level}"
-        for level in range(1, 31)
-        for side in ["Ask", "Bid"]
-    ]
     # -----------------------------------
 
     # Merge sorted data files
@@ -118,11 +105,9 @@ def main():
         merge_list.append(tagged_lines(f_input, op, delim))
 
     tic = time.perf_counter()
-    with open(outfile, 'w', newline="", encoding="utf-8") as output_file, open(outlobster, 'w', newline="", encoding="utf-8") as output_lobster:
+    with open(outfile, 'w', newline="", encoding="utf-8") as output_file:
         csv_output = csv.writer(output_file, delimiter=delim)
-        lob_output = csv.writer(output_lobster, delimiter=delim)
         csv_output.writerow(output_format_params)
-        lob_output.writerow(lobster_header)
         sorted_lines = heapq.merge(*merge_list, key=lambda x: (int(x.line["PARENT_ID"]), int(x.line["ID"])) if x.source_op != "PE" else (int(x.line["PARENT_ID"]), get_nansec_from_time(base_date, x.line["TrdRegTSTimePriority"])))
 
         # Load order book state from previous day (first n Add orders with same TimeIn timestamp)

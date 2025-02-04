@@ -304,12 +304,11 @@ def imbalance_index_vectorized(asks, bids, alpha=0.5, level=3):
     return (V_bt - V_at) / (V_bt + V_at)
 
 
-def price_graph(instrument, security, date, level_depth=3):
+def price_graph(lobster_fp, level_depth=3):
     """
     Create price graph
     :return: figure
     """
-    lobster_fp = f"{Config.path}{date}-{instrument}-{security}-lobster.csv"
     lobster = Lobster(lobster_fp)
     data = lobster.load_data()
     # ? why is date thrown away ?
@@ -386,17 +385,13 @@ def main():
     """
     Main function
     """
-    # Instrument, security, date
-    instrument = "FGBL"
-    security = "4128839"
-    date = "20191202"
-
     # Set default OB for dash
-    dash_OB = OB(instrument, security, date)
+    dash_OB = OB("FGBL", "4128839", "20191202")
     api_OB = None
 
     # Price graph
-    timestamps, ask_prices, bid_prices, lobster_data = price_graph(instrument, security, date, level_depth=1)
+    lobster_fp = "data/XEUR_20191202_688_4128839_lobster.csv"
+    timestamps, ask_prices, bid_prices, lobster_data = price_graph(lobster_fp, level_depth=1)
 
     level_depth = 30
     ask_columns = [f'Ask Volume {i}' for i in range(1, level_depth+1)]
@@ -731,17 +726,10 @@ def main():
             date = date.replace("-", "")
             # Change only if new values
             if instrument != dash_OB.get_instrument() or security != dash_OB.get_security() or date != dash_OB.get_date():
-                # Downlaod f"{date}-{instrument}-{security}-ob.csv" and f"{date}-{instrument}-{security}-lobster.csv"
-
-
-                nonlocal timestamps, ask_prices, bid_prices, lobster_data, imbalance_indices, freqs, time_window
                 dash_OB.change_data_df(instrument, security, date)
                 dash_time = Config.calc_time_from_nansec(dash_OB.get_timestamp())
                 seq, tstamp = dash_OB.get_time_seq(dash_OB.get_timestamp())
-                timestamps, ask_prices, bid_prices, lobster_data = price_graph(instrument, security, date, level_depth=1)
-                lobster_data_matrix = lobster_data[ask_columns + bid_columns].values
-                imbalance_indices = imbalance_index_vectorized(lobster_data_matrix[:, :level_depth], lobster_data_matrix[:, level_depth:], alpha=0.5, level=level_depth)
-                freqs = get_frequency_of_all_incoming_actions(timestamps, time=time_window)
+                # TODO: update price graph
             else:
                 return dash_OB.get_instrument(), dash_OB.get_security(), dash_OB.get_date(), dash_time, dash_book, dash_figure, dash_OB.get_executes()
 
