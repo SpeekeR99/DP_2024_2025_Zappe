@@ -62,8 +62,8 @@ anomaly_scores = (trues - preds)**2
 
 print(f"Zero-shot Adjusted Best F1 Score: {adjbestf1(y_true=labels, y_scores=anomaly_scores)}")
 
-anomaly_start = 74158
-anomaly_end = 74984
+anomaly_start = 0+1024
+anomaly_end = 748250-1024
 start = anomaly_start-512
 end = anomaly_end+512
 
