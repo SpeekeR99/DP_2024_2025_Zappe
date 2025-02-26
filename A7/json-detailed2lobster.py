@@ -265,12 +265,14 @@ print("Creating orderbook...")
 # but I have nothing in my lobster to trade on yet -> Ignoring until first ADD
 
 keys_to_delete = []
+to_be_added = []
 for i, (key, array) in enumerate(instructions.items()):
     to_be_deleted = []
     done = False
     for j, value in enumerate(array):
         if value[0] != "ADD":
             to_be_deleted.append(j)
+            to_be_added.append(value)
         else:
             done = True
             break
@@ -286,6 +288,15 @@ for i, (key, array) in enumerate(instructions.items()):
 for key in keys_to_delete:
     del instructions[key]
 
+first_key = next(iter(instructions))
+# Add the to_be_added to the first key
+for value in to_be_added:
+    instructions[first_key].append(value)
+
+# Go through each key and each array of instructions and sort the arrays, so that the "ADD" instructions are first
+for key, array in instructions.items():
+    instructions[key] = sorted(array, key=lambda x: x[0] == "ADD")
+
 # Initialize data structures
 max_index = 0
 for key, array in instructions.items():
@@ -296,24 +307,24 @@ timestamps = []
 levels = 100
 
 tic = time.time()
+counter = 0
 for i, (timestamp, array) in enumerate(instructions.items()):
-
-    if i % 50_000 == 0:
-        print(f"Processing order {i}/{max_index}")
-
     for j, value in enumerate(array):
+        if counter % 50_000 == 0:
+            print(f"Processing order {counter}/{max_index}")
+
+        counter += 1
+        timestamps.append(timestamp)
+
         # Copy previous state
         if i > 0:
             lobster_buy[i + j] = lobster_buy[i + j - 1].copy()
             lobster_sell[i + j] = lobster_sell[i + j - 1].copy()
 
-        timestamps.append(timestamp)
-
         if value[0] == "ADD":
             price, display_qty, side = value[1]
             if side == 1:
                 lobster = lobster_buy
-                price = -price
             else:
                 lobster = lobster_sell
 
@@ -324,21 +335,29 @@ for i, (timestamp, array) in enumerate(instructions.items()):
             else:
                 if len(lobster[i]) < levels:
                     lobster[i].append((price, display_qty))
-                else:
+                elif side == 1:
                     # Find the worst price
-                    worst_price = max(lobster[i], key=lambda x: x[0])[0]
+                    worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
+                    if price > worst_price:
+                        # Replace the worst price
+                        for j, (p, q) in enumerate(lobster_buy[i]):
+                            if p == worst_price:
+                                lobster_buy[i][j] = (price, display_qty)
+                                break
+                elif side ==2:
+                    # Find the worst price
+                    worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
                     if price < worst_price:
                         # Replace the worst price
-                        for j, (p, q) in enumerate(lobster[i]):
+                        for j, (p, q) in enumerate(lobster_sell[i]):
                             if p == worst_price:
-                                lobster[i][j] = (price, display_qty)
+                                lobster_sell[i][j] = (price, display_qty)
                                 break
 
         elif value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
             price, display_qty, side, prev_price, prev_display_qty = value[1]
             if side == 1:
                 lobster = lobster_buy
-                price = -price
             else:
                 lobster = lobster_sell
 
@@ -377,7 +396,6 @@ for i, (timestamp, array) in enumerate(instructions.items()):
             price, display_qty, side = value[1]
             if side == 1:
                 lobster = lobster_buy
-                price = -price
             else:
                 lobster = lobster_sell
 
@@ -401,12 +419,12 @@ print(f"Created orderbook in {tac - tic:.2f} seconds")
 del instructions
 
 # Export to lobster csv
-print("Exporting to CSV...")
+print("Preparing for export to CSV...")
 
 # Sort the levels correspondingly to the price (depends on buy / sell, best buy price is highest, best sell lowest)
 # Be aware that the prices are NEGATIVE for BUY orders -> thus sorting does not have to be REVERSED
 for i in range(max_index):
-    lobster_buy[i] = sorted(lobster_buy[i])
+    lobster_buy[i] = sorted(lobster_buy[i], reverse=True)
     lobster_sell[i] = sorted(lobster_sell[i])
 
 # Time,Ask Price 1, Ask Volume 1, Bid Price 1, Bid Volume 1, ...
@@ -418,14 +436,15 @@ lobster_header = lobster_header[:-1]  # Remove last comma
 
 OUTPUT_FILE_PATH = "pokus_lobsteru.csv"
 
+print("Exporting to CSV...")
+
 tic = time.time()
 # Export to CSV
 with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
     writer = csv.writer(fp)
     writer.writerow(lobster_header.split(","))  # Write header
 
-    # Starting from 10, because first few indices are weird anyways, people trying to buy for cheap and sell for high
-    for i in range(10, max_index):
+    for i in range(max_index):
         # row = [i]
         row = [timestamps[i]]  # Start with timestamp
         for level in range(levels):
@@ -439,7 +458,7 @@ with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
             # Add buy levels
             if level < len(lobster_buy[i]):
                 # Buy prices are negative -> make them positive
-                row.extend([f"{-lobster_buy[i][level][0]:.8f}", f"{lobster_buy[i][level][1]:.8f}"])
+                row.extend([f"{lobster_buy[i][level][0]:.8f}", f"{lobster_buy[i][level][1]:.8f}"])
             else:
                 row.extend(["", ""])  # Empty values
 
