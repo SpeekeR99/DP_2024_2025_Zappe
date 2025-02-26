@@ -2,7 +2,6 @@ import sys
 import json
 import time
 import csv
-import heapq
 
 MARKET_ID = "XEUR"
 DATE = "20191202"
@@ -65,7 +64,10 @@ for i, part in enumerate(data):
                 OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
-                instructions[TrdRegTSTimeIn] = ("ADD", (Price, DisplayQty, Side))
+                if TrdRegTSTimeIn in instructions:
+                    instructions[TrdRegTSTimeIn].append(("ADD", (Price, DisplayQty, Side)))
+                else:
+                    instructions[TrdRegTSTimeIn] = [("ADD", (Price, DisplayQty, Side))]
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MODIFY:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
@@ -79,7 +81,10 @@ for i, part in enumerate(data):
                 OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
-                instructions[TrdRegTSTimeIn] = ("MODIFY", (Price, DisplayQty, Side, PrevPrice, PrevDisplayQty))
+                if TrdRegTSTimeIn in instructions:
+                    instructions[TrdRegTSTimeIn].append(("MODIFY", (Price, DisplayQty, Side, PrevPrice, PrevDisplayQty)))
+                else:
+                    instructions[TrdRegTSTimeIn] = [("MODIFY", (Price, DisplayQty, Side, PrevPrice, PrevDisplayQty))]
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MODIFY_SAME_PRIORITY:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
@@ -93,7 +98,10 @@ for i, part in enumerate(data):
                 Pad6 = "\x00\x00\x00\x00\x00\x00"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
-                instructions[TrdRegTSTimeIn] = ("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty))
+                if TrdRegTSTimeIn in instructions:
+                    instructions[TrdRegTSTimeIn].append(("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty)))
+                else:
+                    instructions[TrdRegTSTimeIn] = [("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty))]
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_DELETE:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
@@ -105,8 +113,10 @@ for i, part in enumerate(data):
                 OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
-                instructions[TrdRegTSTimeIn] = ("DELETE", (Price, DisplayQty, Side))
-
+                if TrdRegTSTimeIn in instructions:
+                    instructions[TrdRegTSTimeIn].append(("DELETE", (Price, DisplayQty, Side)))
+                else:
+                    instructions[TrdRegTSTimeIn] = [("DELETE", (Price, DisplayQty, Side))]
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MASS_DELETE:
                 SecurityID = transaction["SecurityID"]
@@ -125,7 +135,10 @@ for i, part in enumerate(data):
                 LastQty = float(transaction["LastQty"]) / 1e8
                 LastPx = float(transaction["LastPx"]) / 1e8
 
-                instructions[TrdRegTSTimePriority] = ("PARTIAL_ORDER_EXECUTION", (Price, LastQty, Side))
+                if TrdRegTSTimePriority in instructions:
+                    instructions[TrdRegTSTimePriority].append(("PARTIAL_ORDER_EXECUTION", (LastPx, LastQty, Side)))
+                else:
+                    instructions[TrdRegTSTimePriority] = [("PARTIAL_ORDER_EXECUTION", (LastPx, LastQty, Side))]
 
             elif transaction["MessageHeader"]["TemplateID"] == FULL_ORDER_EXECUTION:
                 Side = transaction["Side"]
@@ -139,7 +152,10 @@ for i, part in enumerate(data):
                 LastQty = float(transaction["LastQty"]) / 1e8
                 LastPx = float(transaction["LastPx"]) / 1e8
 
-                instructions[TrdRegTSTimePriority] = ("FULL_ORDER_EXECUTION", (Price, LastQty, Side))
+                if TrdRegTSTimePriority in instructions:
+                    instructions[TrdRegTSTimePriority].append(("FULL_ORDER_EXECUTION", (LastPx, LastQty, Side)))
+                else:
+                    instructions[TrdRegTSTimePriority] = [("FULL_ORDER_EXECUTION", (LastPx, LastQty, Side))]
 
             elif transaction["MessageHeader"]["TemplateID"] == EXECUTION_SUMMARY:
                 SecurityID = transaction["SecurityID"]
@@ -230,7 +246,10 @@ for i, part in enumerate(data):
                 pass
 
 tac = time.time()
-print(f"Processed {len(instructions)} transactions in {tac - tic:.2f} seconds")
+max_index = 0
+for key, array in instructions.items():
+    max_index += len(array)
+print(f"Processed {max_index} transactions in {tac - tic:.2f} seconds")
 print("Processing done")
 
 # Variable "data" is now useless, free up memory
@@ -244,127 +263,136 @@ print("Creating orderbook...")
 
 # Oddly enough, the day starts with 33 FULL_ORDER_EXECUTIONs or PARTIAL_ORDER_EXECUTIONs
 # but I have nothing in my lobster to trade on yet -> Ignoring until first ADD
-to_be_deleted = []
-for i, (key, value) in enumerate(instructions.items()):
-    if value[0] != "ADD":
-        to_be_deleted.append(key)
-    else:
-        break
 
-for key in to_be_deleted:
+keys_to_delete = []
+for i, (key, array) in enumerate(instructions.items()):
+    to_be_deleted = []
+    done = False
+    for j, value in enumerate(array):
+        if value[0] != "ADD":
+            to_be_deleted.append(j)
+        else:
+            done = True
+            break
+
+    for j in sorted(to_be_deleted, reverse=True):
+        del array[j]
+
+    if done:
+        break
+    else:
+        keys_to_delete.append(key)
+
+for key in keys_to_delete:
     del instructions[key]
 
 # Initialize data structures
-max_index = len(instructions)
+max_index = 0
+for key, array in instructions.items():
+    max_index += len(array)
 lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
 timestamps = []
 levels = 100
 
 tic = time.time()
-for i, (timestamp, value) in enumerate(instructions.items()):
-    timestamps.append(timestamp)
-
-    # Copy previous state
-    if i > 0:
-        lobster_buy[i] = lobster_buy[i - 1].copy()
-        lobster_sell[i] = lobster_sell[i - 1].copy()
+for i, (timestamp, array) in enumerate(instructions.items()):
 
     if i % 50_000 == 0:
         print(f"Processing order {i}/{max_index}")
 
-    if value[0] == "ADD":
-        price, display_qty, side = value[1]
-        if side == 1:
-            # Buy order: for buy orders we need min-heap behavior, but for storing we need reverse -> max-heap
-            lobster = lobster_buy
-            price = -price
-        else:
-            # Sell order: for sell orders we need max-heap behavior, but again, reversing -> min-heap
-            lobster = lobster_sell
+    for j, value in enumerate(array):
+        # Copy previous state
+        if i > 0:
+            lobster_buy[i + j] = lobster_buy[i + j - 1].copy()
+            lobster_sell[i + j] = lobster_sell[i + j - 1].copy()
 
-        if len(lobster[i]) < levels:
-            heapq.heappush(lobster[i], (price, display_qty))
-        elif price > lobster[i][0][0]:
-            heapq.heappushpop(lobster[i], (price, display_qty))
+        timestamps.append(timestamp)
 
-    elif value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
-        price, display_qty, side, prev_price, prev_display_qty = value[1]
-        if side == 1:
-            lobster = lobster_buy
-            price = -price
-        else:
-            lobster = lobster_sell
-
-        # Find the order in the heap
-        found = False
-        for j, (p, q) in enumerate(lobster[i]):
-            if p == prev_price and q == prev_display_qty:
-                found = True
-                break
-
-        # Modify the order
-        if found:
-            lobster[i][j] = (price, display_qty)
-
-    elif value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION":
-        price, display_qty, side = value[1]
-        if side == 1:
-            lobster = lobster_buy
-            price = -price
-        else:
-            lobster = lobster_sell
-
-        # Find the order in the heap
-        found = False
-        for j, (p, q) in enumerate(lobster[i]):
-            if p == price and q == display_qty:
-                found = True
-                break
-
-        # Delete the order
-        if found:
-            del lobster[i][j]
-
-        if value[0] == "FULL_ORDER_EXECUTION":
+        if value[0] == "ADD":
+            price, display_qty, side = value[1]
             if side == 1:
-                lobster = lobster_sell
-            else:
                 lobster = lobster_buy
-            price = -price
+                price = -price
+            else:
+                lobster = lobster_sell
+
+            for p, q in lobster[i]:
+                if p == price:
+                    q += display_qty
+                    break
+            else:
+                if len(lobster[i]) < levels:
+                    lobster[i].append((price, display_qty))
+                else:
+                    # Find the worst price
+                    worst_price = max(lobster[i], key=lambda x: x[0])[0]
+                    if price < worst_price:
+                        # Replace the worst price
+                        for j, (p, q) in enumerate(lobster[i]):
+                            if p == worst_price:
+                                lobster[i][j] = (price, display_qty)
+                                break
+
+        elif value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
+            price, display_qty, side, prev_price, prev_display_qty = value[1]
+            if side == 1:
+                lobster = lobster_buy
+                price = -price
+            else:
+                lobster = lobster_sell
 
             # Find the order in the heap
             found = False
             for j, (p, q) in enumerate(lobster[i]):
-                if p == price and q == display_qty:
+                if p == prev_price:
+                    found = True
+                    break
+
+            # Modify the order
+            if found and price == prev_price:
+                lobster[i][j] = (price, lobster[i][j][1] - prev_display_qty + display_qty)
+            # elif found:
+            #     lobster[i][j] = (prev_price, lobster[i][j][1] - prev_display_qty)
+            #
+            #     found = False
+            #     for j, (p, q) in enumerate(lobster[i]):
+            #         if p == price:
+            #             found = True
+            #             break
+            #     else:
+            #         # Find the worst price
+            #         worst_price = max(lobster[i], key=lambda x: x[0])[0]
+            #         if price < worst_price:
+            #             # Replace the worst price
+            #             for j, (p, q) in enumerate(lobster[i]):
+            #                 if p == worst_price:
+            #                     lobster[i][j] = (price, display_qty)
+            #                     break
+            #
+            #     if found:
+            #         lobster[i][j] = (price, lobster[i][j][1] + display_qty)
+
+        elif value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
+            price, display_qty, side = value[1]
+            if side == 1:
+                lobster = lobster_buy
+                price = -price
+            else:
+                lobster = lobster_sell
+
+            # Find the order in the heap
+            found = False
+            for j, (p, q) in enumerate(lobster[i]):
+                if p == price:
                     found = True
                     break
 
             # Delete the order
             if found:
-                del lobster[i][j]
-
-    elif value[0] == "PARTIAL_ORDER_EXECUTION":
-        price, last_qty, side = value[1]
-        if side == 1:
-            lobster = lobster_buy
-            price = -price
-        else:
-            lobster = lobster_sell
-
-        # Find the order in the heap
-        found = False
-        for j, (p, q) in enumerate(lobster[i]):
-            if p == price:
-                found = True
-                break
-
-        # Modify the order
-        if found:
-            last_qty = min(q, last_qty)
-            lobster[i][j] = (price, q - last_qty)
-            if lobster[i][j][1] == 0:
-                del lobster[i][j]
+                lobster[i][j] = (price, q - display_qty)
+                if lobster[i][j][1] <= 0:
+                    del lobster[i][j]
 
 tac = time.time()
 print(f"Created orderbook in {tac - tic:.2f} seconds")
