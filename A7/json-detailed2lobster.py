@@ -219,31 +219,27 @@ for key, array in instructions.items():
     instructions[key] = sorted(array, key=lambda x: x[0] == "ADD")
 
 # Initialize data structures
-max_index = 0
-for key, array in instructions.items():
-    max_index += len(array)
+max_index = len(instructions)
 lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
 timestamps = []
 levels = 100
 
 tic = time.time()
-counter = 0
 for i, (timestamp, array) in enumerate(instructions.items()):
+    # Print progress
+    if i % 50_000 == 0:
+        print(f"Processing order {i}/{max_index}")
+
+    # Copy previous state
+    if i > 0:
+        lobster_buy[i] = lobster_buy[i - 1].copy()
+        lobster_sell[i] = lobster_sell[i - 1].copy()
+
+    # Save timestamp
+    timestamps.append(timestamp)
+
     for j, value in enumerate(array):
-        array_index = i + j
-
-        if counter % 50_000 == 0:
-            print(f"Processing order {counter}/{max_index}")
-
-        counter += 1
-        timestamps.append(timestamp)
-
-        # Copy previous state
-        if i > 0:
-            lobster_buy[array_index] = lobster_buy[array_index - 1].copy()
-            lobster_sell[array_index] = lobster_sell[array_index - 1].copy()
-
         if value[0] == "ADD":
             price, display_qty, side = value[1]
             if side == 1:
@@ -256,25 +252,25 @@ for i, (timestamp, array) in enumerate(instructions.items()):
                     q += display_qty
                     break
             else:
-                if len(lobster[array_index]) < levels:
-                    lobster[array_index].append((price, display_qty))
+                if len(lobster[i]) < levels:
+                    lobster[i].append((price, display_qty))
                 elif side == 1:
                     # Find the worst price
-                    worst_price = min(lobster_buy[array_index], key=lambda x: x[0])[0]
+                    worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
                     if price > worst_price:
                         # Replace the worst price
-                        for k, (p, q) in enumerate(lobster_buy[array_index]):
+                        for k, (p, q) in enumerate(lobster_buy[i]):
                             if p == worst_price:
-                                lobster_buy[array_index][k] = (price, display_qty)
+                                lobster_buy[i][k] = (price, display_qty)
                                 break
                 elif side ==2:
                     # Find the worst price
-                    worst_price = max(lobster_sell[array_index], key=lambda x: x[0])[0]
+                    worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
                     if price < worst_price:
                         # Replace the worst price
-                        for k, (p, q) in enumerate(lobster_sell[array_index]):
+                        for k, (p, q) in enumerate(lobster_sell[i]):
                             if p == worst_price:
-                                lobster_sell[array_index][k] = (price, display_qty)
+                                lobster_sell[i][k] = (price, display_qty)
                                 break
 
         elif value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
@@ -286,34 +282,34 @@ for i, (timestamp, array) in enumerate(instructions.items()):
 
             # Find the order in the heap
             found = False
-            for k, (p, q) in enumerate(lobster[array_index]):
+            for k, (p, q) in enumerate(lobster[i]):
                 if p == prev_price:
                     found = True
                     break
 
             # Modify the order
             if found and price == prev_price:
-                lobster[array_index][k] = (price, lobster[array_index][k][1] - prev_display_qty + display_qty)
+                lobster[i][k] = (price, lobster[i][k][1] - prev_display_qty + display_qty)
             elif found:
-                lobster[array_index][k] = (prev_price, lobster[array_index][k][1] - prev_display_qty)
+                lobster[i][k] = (prev_price, lobster[i][k][1] - prev_display_qty)
 
                 found = False
-                for k, (p, q) in enumerate(lobster[array_index]):
+                for l, (p, q) in enumerate(lobster[i]):
                     if p == price:
                         found = True
                         break
                 else:
                     # Find the worst price
-                    worst_price = max(lobster[array_index], key=lambda x: x[0])[0]
+                    worst_price = max(lobster[i], key=lambda x: x[0])[0]
                     if price < worst_price:
                         # Replace the worst price
-                        for k, (p, q) in enumerate(lobster[array_index]):
+                        for m, (p, q) in enumerate(lobster[i]):
                             if p == worst_price:
-                                lobster[array_index][k] = (price, display_qty)
+                                lobster[i][m] = (price, display_qty)
                                 break
 
                 if found:
-                    lobster[array_index][k] = (price, lobster[array_index][k][1] + display_qty)
+                    lobster[i][l] = (price, lobster[i][l][1] + display_qty)
 
         elif value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
             price, display_qty, side = value[1]
@@ -324,21 +320,21 @@ for i, (timestamp, array) in enumerate(instructions.items()):
 
             # Find the order in the heap
             found = False
-            for k, (p, q) in enumerate(lobster[array_index]):
+            for k, (p, q) in enumerate(lobster[i]):
                 if p == price:
                     found = True
                     break
 
             # Delete the order
             if found:
-                lobster[array_index][k] = (price, q - display_qty)
-                if lobster[array_index][k][1] <= 0:
-                    del lobster[array_index][k]
+                lobster[i][k] = (price, q - display_qty)
+                if lobster[i][k][1] <= 0:
+                    del lobster[i][k]
 
         elif value[0] == "ORDER_MASS_DELETE":
             # Delete all orders
-            lobster_buy[array_index] = []
-            lobster_sell[array_index] = []
+            lobster_buy[i] = []
+            lobster_sell[i] = []
 
 tac = time.time()
 print(f"Created orderbook in {tac - tic:.2f} seconds")
