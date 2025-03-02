@@ -21,21 +21,26 @@ ORDER_DELETE = 13102
 ORDER_MASS_DELETE = 13103
 PARTIAL_ORDER_EXECUTION = 13105
 FULL_ORDER_EXECUTION = 13104
-EXECUTION_SUMMARY = 13202
-AUCTION_BEST_BID_OFFER = 13500
-AUCTION_CLEARING_PRICE = 13501
-TOP_OF_BOOK = 13504
+# EXECUTION_SUMMARY = 13202
+# AUCTION_BEST_BID_OFFER = 13500
+# AUCTION_CLEARING_PRICE = 13501
+# TOP_OF_BOOK = 13504
 # PRODUCT_STATE_CHANGE = 13300
-INSTRUMENT_STATE_CHANGE = 13301
+# INSTRUMENT_STATE_CHANGE = 13301
 # CROSS_REQUEST = 13502
 # QUOTE_REQUEST = 13503
 # ADD_COMPLEX_INSTRUMENT = 13400
-TRADE_REPORT = 13201
+# TRADE_REPORT = 13201
 # TRADE_REVERSAL = 13200
 # PRODUCT_SUMMARY = 13600
-INSTRUMENT_SUMMARY = 13601
+# INSTRUMENT_SUMMARY = 13601
 # SNAPSHOT_ORDER = 13602
 # HEARTBEAT = 13001
+
+# XEUR_20210319_589_5336359_detailed
+# DATE = "20210319"
+# MARKET_SEGMENT_ID = "589"
+# SECURITY_ID = "5336359"
 
 print("Loading data...")
 tic = time.time()
@@ -57,11 +62,11 @@ for i, part in enumerate(data):
         for transaction in transaction_array:
             if transaction["MessageHeader"]["TemplateID"] == ORDER_ADD:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
-                SecurityID = transaction["SecurityID"]
+                # SecurityID = transaction["SecurityID"]
                 TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
                 DisplayQty = float(transaction["OrderDetails"]["DisplayQty"]) / 1e8
                 Side = transaction["OrderDetails"]["Side"]
-                OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
+                # OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
                 if TrdRegTSTimeIn in instructions:
@@ -74,11 +79,11 @@ for i, part in enumerate(data):
                 TrdRegTSPrevTimePriority = transaction["TrdRegTSPrevTimePriority"]
                 PrevPrice = float(transaction["PrevPrice"]) / 1e8
                 PrevDisplayQty = float(transaction["PrevDisplayQty"]) / 1e8
-                SecurityID = transaction["SecurityID"]
+                # SecurityID = transaction["SecurityID"]
                 TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
                 DisplayQty = float(transaction["OrderDetails"]["DisplayQty"]) / 1e8
                 Side = transaction["OrderDetails"]["Side"]
-                OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
+                # OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
                 if TrdRegTSTimeIn in instructions:
@@ -88,14 +93,14 @@ for i, part in enumerate(data):
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MODIFY_SAME_PRIORITY:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
-                TransactTime = transaction["TransactTime"]
+                # TransactTime = transaction["TransactTime"]
                 PrevDisplayQty = float(transaction["PrevDisplayQty"]) / 1e8
-                SecurityID = transaction["SecurityID"]
+                # SecurityID = transaction["SecurityID"]
                 TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
                 DisplayQty = float(transaction["OrderDetails"]["DisplayQty"]) / 1e8
                 Side = transaction["OrderDetails"]["Side"]
-                OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
-                Pad6 = "\x00\x00\x00\x00\x00\x00"
+                # OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
+                # Pad6 = "\x00\x00\x00\x00\x00\x00"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
                 if TrdRegTSTimeIn in instructions:
@@ -105,12 +110,12 @@ for i, part in enumerate(data):
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_DELETE:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
-                TransactTime = transaction["TransactTime"]
-                SecurityID = transaction["SecurityID"]
+                # TransactTime = transaction["TransactTime"]
+                # SecurityID = transaction["SecurityID"]
                 TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
                 DisplayQty = float(transaction["OrderDetails"]["DisplayQty"]) / 1e8
                 Side = transaction["OrderDetails"]["Side"]
-                OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
+                # OrdType = transaction["OrderDetails"]["OrdType"] if transaction["OrderDetails"]["OrdType"] is not None else "NOVALUE"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
                 if TrdRegTSTimeIn in instructions:
@@ -121,17 +126,21 @@ for i, part in enumerate(data):
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MASS_DELETE:
                 SecurityID = transaction["SecurityID"]
                 TransactTime = transaction["TransactTime"]
-                pass
+
+                if TransactTime in instructions:
+                    instructions[TransactTime].append(("ORDER_MASS_DELETE", (SecurityID)))
+                else:
+                    instructions[TransactTime] = [("ORDER_MASS_DELETE", (SecurityID))]
 
             elif transaction["MessageHeader"]["TemplateID"] == PARTIAL_ORDER_EXECUTION:
                 Side = transaction["Side"]
-                OrdType = transaction["OrdType"] if transaction["OrdType"] is not None else "NOVALUE"
-                AlgorithmicTradeIndicator = transaction["AlgorithmicTradeIndicator"] if transaction["AlgorithmicTradeIndicator"] is not None else "NOVALUE"
-                Pad1 = "\x00"
-                TrdMatchID = transaction["TrdMatchID"]
+                # OrdType = transaction["OrdType"] if transaction["OrdType"] is not None else "NOVALUE"
+                # AlgorithmicTradeIndicator = transaction["AlgorithmicTradeIndicator"] if transaction["AlgorithmicTradeIndicator"] is not None else "NOVALUE"
+                # Pad1 = "\x00"
+                # TrdMatchID = transaction["TrdMatchID"]
                 Price = float(transaction["Price"]) / 1e8
                 TrdRegTSTimePriority = transaction["TrdRegTSTimePriority"]
-                SecurityID = transaction["SecurityID"]
+                # SecurityID = transaction["SecurityID"]
                 LastQty = float(transaction["LastQty"]) / 1e8
                 LastPx = float(transaction["LastPx"]) / 1e8
 
@@ -142,13 +151,13 @@ for i, part in enumerate(data):
 
             elif transaction["MessageHeader"]["TemplateID"] == FULL_ORDER_EXECUTION:
                 Side = transaction["Side"]
-                OrdType = transaction["OrdType"] if transaction["OrdType"] is not None else "NOVALUE"
-                AlgorithmicTradeIndicator = transaction["AlgorithmicTradeIndicator"] if transaction["AlgorithmicTradeIndicator"] is not None else "NOVALUE"
-                Pad1 = "\x00"
-                TrdMatchID = transaction["TrdMatchID"]
+                # OrdType = transaction["OrdType"] if transaction["OrdType"] is not None else "NOVALUE"
+                # AlgorithmicTradeIndicator = transaction["AlgorithmicTradeIndicator"] if transaction["AlgorithmicTradeIndicator"] is not None else "NOVALUE"
+                # Pad1 = "\x00"
+                # TrdMatchID = transaction["TrdMatchID"]
                 Price = float(transaction["Price"]) / 1e8
                 TrdRegTSTimePriority = transaction["TrdRegTSTimePriority"]
-                SecurityID = transaction["SecurityID"]
+                # SecurityID = transaction["SecurityID"]
                 LastQty = float(transaction["LastQty"]) / 1e8
                 LastPx = float(transaction["LastPx"]) / 1e8
 
@@ -156,94 +165,6 @@ for i, part in enumerate(data):
                     instructions[TrdRegTSTimePriority].append(("FULL_ORDER_EXECUTION", (LastPx, LastQty, Side)))
                 else:
                     instructions[TrdRegTSTimePriority] = [("FULL_ORDER_EXECUTION", (LastPx, LastQty, Side))]
-
-            elif transaction["MessageHeader"]["TemplateID"] == EXECUTION_SUMMARY:
-                SecurityID = transaction["SecurityID"]
-                AggressorTime = transaction["AggressorTime"]
-                RequestTime = transaction["RequestTime"]
-                ExecID = transaction["ExecID"]
-                LastQty = float(transaction["LastQty"]) / 1e8
-                AggressorSide = transaction["AggressorSide"]
-                Pad1 = "\x00"
-                TradeCondition = transaction["TradeCondition"] if transaction["TradeCondition"] is not None else "NOVALUE"
-                Pad4 = "\x00\x00\x00\x00"
-                LastPx = float(transaction["LastPx"]) / 1e8
-                RestingHiddenQty = f"{float(transaction['RestingHiddenQty']) / 1e8}:.8f" if (transaction["RestingHiddenQty"] is not None) and (transaction["RestingHiddenQty"] != 0) and (transaction["RestingHiddenQty"] != "0") else "NOVALUE"
-                RestingCxlQty = f"{float(transaction['RestingCxlQty']) / 1e8}:.8f" if (transaction["RestingCxlQty"] is not None) and (transaction["RestingCxlQty"] != 0) and (transaction["RestingHiddenQty"] != "0") else "NOVALUE"
-                pass
-
-            elif transaction["MessageHeader"]["TemplateID"] == AUCTION_BEST_BID_OFFER:
-                TransactTime = transaction["TransactTime"]
-                SecurityID = transaction["SecurityID"]
-                BidPx = float(transaction["BidPx"]) / 1e8
-                OfferPx = float(transaction["OfferPx"]) / 1e8
-                BidSize = f'{float(transaction["BidSize"]) / 1e8}:.8f' if transaction["BidSize"] is not None else "NOVALUE"
-                OfferSize = f'{float(transaction["OfferSize"]) / 1e8}:.8f' if transaction["OfferSize"] is not None else "NOVALUE"
-                PotentialSecurityTradingEvent = transaction["PotentialSecurityTradingEvent"] if transaction["PotentialSecurityTradingEvent"] is not None else "NOVALUE"
-                BidOrdType = transaction["BidOrdType"] if transaction["BidOrdType"] is not None else "NOVALUE"
-                OfferOrdType = transaction["OfferOrdType"] if transaction["OfferOrdType"] is not None else "NOVALUE"
-                Pad5 = "\x00\x00\x00\x00\x00"
-                pass
-
-            elif transaction["MessageHeader"]["TemplateID"] == AUCTION_CLEARING_PRICE:
-                TransactTime = transaction["TransactTime"]
-                SecurityID = transaction["SecurityID"]
-                LastPx = f'{float(transaction["LastPx"]) / 1e8}:.8f' if transaction["LastPx"] is not None else "NOVALUE"
-                LastQty = f'{float(transaction["LastQty"]) / 1e8}:.8f' if transaction["LastQty"] is not None else "NOVALUE"
-                ImbalanceQty = f'{float(transaction["ImbalanceQty"]) / 1e8}:.8f' if transaction["ImbalanceQty"] is not None else "NOVALUE"
-                SecurityTradingStatus = transaction["SecurityTradingStatus"] if transaction["SecurityTradingStatus"] is not None else "NOVALUE"
-                PotentialSecurityTradingEvent = transaction["PotentialSecurityTradingEvent"] if transaction["PotentialSecurityTradingEvent"] is not None else "NOVALUE"
-                Pad6 = "\x00\x00\x00\x00\x00\x00"
-                pass
-
-            elif transaction["MessageHeader"]["TemplateID"] == TOP_OF_BOOK:
-                TransactTime = transaction["TransactTime"]
-                SecurityID = transaction["SecurityID"]
-                BidPx = float(transaction["BidPx"]) / 1e8
-                OfferPx = float(transaction["OfferPx"]) / 1e8
-                BidSize = f'{float(transaction["BidSize"]) / 1e8}:.8f' if transaction["BidSize"] is not None else "NOVALUE"
-                OfferSize = f'{float(transaction["OfferSize"]) / 1e8}:.8f' if transaction["OfferSize"] is not None else "NOVALUE"
-                pass
-
-            elif transaction["MessageHeader"]["TemplateID"] == INSTRUMENT_STATE_CHANGE:
-                SecurityID = transaction["SecurityID"]
-                SecurityStatus = transaction["SecurityStatus"]
-                SecurityTradingStatus = transaction["SecurityTradingStatus"]
-                MarketCondition = transaction["MarketCondition"]
-                FastMarketIndicator = transaction["FastMarketIndicator"]
-                SecurityTradingEvent = transaction["SecurityTradingEvent"] if transaction["SecurityTradingEvent"] is not None else "NOVALUE"
-                SoldOutIndicator = transaction["SoldOutIndicator"] if transaction["SoldOutIndicator"] is not None else "NOVALUE"
-                Pad2 = "\x00\x00"
-                TransactTime = transaction["TransactTime"]
-                pass
-
-            elif transaction["MessageHeader"]["TemplateID"] == TRADE_REPORT:
-                SecurityID = transaction["SecurityID"]
-                TransactTime = transaction["TransactTime"]
-                LastQty = float(transaction["LastQty"]) / 1e8
-                LastPx = float(transaction["LastPx"]) / 1e8
-                TrdMatchID = transaction["TrdMatchID"]
-                MatchType = transaction["MatchType"]
-                MatchSubType = transaction["MatchSubType"]
-                AlgorithmicTradeIndicator = transaction["AlgorithmicTradeIndicator"] if transaction["AlgorithmicTradeIndicator"] is not None else "NOVALUE"
-                TradeCondition = transaction["TradeCondition"] if transaction["TradeCondition"] is not None else "NOVALUE"
-                pass
-
-            elif transaction["MessageHeader"]["TemplateID"] == INSTRUMENT_SUMMARY:
-                SecurityID = transaction["SecurityID"]
-                LastUpdateTime = transaction["LastUpdateTime"]
-                TrdRegTSExecutionTime = transaction["TrdRegTSExecutionTime"]
-                TotNoOrders = transaction["TotNoOrders"]
-                SecurityStatus = transaction["SecurityStatus"]
-                SecurityTradingStatus = transaction["SecurityTradingStatus"]
-                MarketCondition = transaction["MarketCondition"]
-                FastMarketIndicator = transaction["FastMarketIndicator"]
-                SecurityTradingEvent = transaction["SecurityTradingEvent"]
-                SoldOutIndicator = transaction["SoldOutIndicator"]
-                ProductComplex = transaction["ProductComplex"]
-                NoMDEntries = transaction["NoMDEntries"]
-                Pad6 = "\x00\x00\x00\x00\x00\x00"
-                pass
 
 tac = time.time()
 max_index = 0
@@ -310,6 +231,8 @@ tic = time.time()
 counter = 0
 for i, (timestamp, array) in enumerate(instructions.items()):
     for j, value in enumerate(array):
+        array_index = i + j
+
         if counter % 50_000 == 0:
             print(f"Processing order {counter}/{max_index}")
 
@@ -318,8 +241,8 @@ for i, (timestamp, array) in enumerate(instructions.items()):
 
         # Copy previous state
         if i > 0:
-            lobster_buy[i + j] = lobster_buy[i + j - 1].copy()
-            lobster_sell[i + j] = lobster_sell[i + j - 1].copy()
+            lobster_buy[array_index] = lobster_buy[array_index - 1].copy()
+            lobster_sell[array_index] = lobster_sell[array_index - 1].copy()
 
         if value[0] == "ADD":
             price, display_qty, side = value[1]
@@ -333,25 +256,25 @@ for i, (timestamp, array) in enumerate(instructions.items()):
                     q += display_qty
                     break
             else:
-                if len(lobster[i]) < levels:
-                    lobster[i].append((price, display_qty))
+                if len(lobster[array_index]) < levels:
+                    lobster[array_index].append((price, display_qty))
                 elif side == 1:
                     # Find the worst price
-                    worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
+                    worst_price = min(lobster_buy[array_index], key=lambda x: x[0])[0]
                     if price > worst_price:
                         # Replace the worst price
-                        for j, (p, q) in enumerate(lobster_buy[i]):
+                        for k, (p, q) in enumerate(lobster_buy[array_index]):
                             if p == worst_price:
-                                lobster_buy[i][j] = (price, display_qty)
+                                lobster_buy[array_index][k] = (price, display_qty)
                                 break
                 elif side ==2:
                     # Find the worst price
-                    worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
+                    worst_price = max(lobster_sell[array_index], key=lambda x: x[0])[0]
                     if price < worst_price:
                         # Replace the worst price
-                        for j, (p, q) in enumerate(lobster_sell[i]):
+                        for k, (p, q) in enumerate(lobster_sell[array_index]):
                             if p == worst_price:
-                                lobster_sell[i][j] = (price, display_qty)
+                                lobster_sell[array_index][k] = (price, display_qty)
                                 break
 
         elif value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
@@ -363,34 +286,34 @@ for i, (timestamp, array) in enumerate(instructions.items()):
 
             # Find the order in the heap
             found = False
-            for j, (p, q) in enumerate(lobster[i]):
+            for k, (p, q) in enumerate(lobster[array_index]):
                 if p == prev_price:
                     found = True
                     break
 
             # Modify the order
             if found and price == prev_price:
-                lobster[i][j] = (price, lobster[i][j][1] - prev_display_qty + display_qty)
-            # elif found:
-            #     lobster[i][j] = (prev_price, lobster[i][j][1] - prev_display_qty)
-            #
-            #     found = False
-            #     for j, (p, q) in enumerate(lobster[i]):
-            #         if p == price:
-            #             found = True
-            #             break
-            #     else:
-            #         # Find the worst price
-            #         worst_price = max(lobster[i], key=lambda x: x[0])[0]
-            #         if price < worst_price:
-            #             # Replace the worst price
-            #             for j, (p, q) in enumerate(lobster[i]):
-            #                 if p == worst_price:
-            #                     lobster[i][j] = (price, display_qty)
-            #                     break
-            #
-            #     if found:
-            #         lobster[i][j] = (price, lobster[i][j][1] + display_qty)
+                lobster[array_index][k] = (price, lobster[array_index][k][1] - prev_display_qty + display_qty)
+            elif found:
+                lobster[array_index][k] = (prev_price, lobster[array_index][k][1] - prev_display_qty)
+
+                found = False
+                for k, (p, q) in enumerate(lobster[array_index]):
+                    if p == price:
+                        found = True
+                        break
+                else:
+                    # Find the worst price
+                    worst_price = max(lobster[array_index], key=lambda x: x[0])[0]
+                    if price < worst_price:
+                        # Replace the worst price
+                        for k, (p, q) in enumerate(lobster[array_index]):
+                            if p == worst_price:
+                                lobster[array_index][k] = (price, display_qty)
+                                break
+
+                if found:
+                    lobster[array_index][k] = (price, lobster[array_index][k][1] + display_qty)
 
         elif value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
             price, display_qty, side = value[1]
@@ -401,16 +324,21 @@ for i, (timestamp, array) in enumerate(instructions.items()):
 
             # Find the order in the heap
             found = False
-            for j, (p, q) in enumerate(lobster[i]):
+            for k, (p, q) in enumerate(lobster[array_index]):
                 if p == price:
                     found = True
                     break
 
             # Delete the order
             if found:
-                lobster[i][j] = (price, q - display_qty)
-                if lobster[i][j][1] <= 0:
-                    del lobster[i][j]
+                lobster[array_index][k] = (price, q - display_qty)
+                if lobster[array_index][k][1] <= 0:
+                    del lobster[array_index][k]
+
+        elif value[0] == "ORDER_MASS_DELETE":
+            # Delete all orders
+            lobster_buy[array_index] = []
+            lobster_sell[array_index] = []
 
 tac = time.time()
 print(f"Created orderbook in {tac - tic:.2f} seconds")
