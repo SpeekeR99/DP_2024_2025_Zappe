@@ -41,9 +41,9 @@ FULL_ORDER_EXECUTION = 13104
 # HEARTBEAT = 13001
 
 # XEUR_20210319_589_5336359_detailed
-DATE = "20210319"
-MARKET_SEGMENT_ID = "589"
-SECURITY_ID = "5336359"
+# DATE = "20210319"
+# MARKET_SEGMENT_ID = "589"
+# SECURITY_ID = "5336359"
 
 print("Loading data...")
 tic = time.time()
@@ -106,10 +106,10 @@ for i, part in enumerate(data):
                 # Pad6 = "\x00\x00\x00\x00\x00\x00"
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
 
-                if TrdRegTSTimeIn in instructions:
-                    instructions[TrdRegTSTimeIn].append(("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty)))
+                if TrdRegTSTimePriority in instructions:
+                    instructions[TrdRegTSTimePriority].append(("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty)))
                 else:
-                    instructions[TrdRegTSTimeIn] = [("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty))]
+                    instructions[TrdRegTSTimePriority] = [("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty))]
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_DELETE:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
@@ -225,7 +225,7 @@ for key, array in instructions.items():
 max_index = len(instructions)
 lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
-timestamps = []
+timestamps = list(instructions.keys())
 cancellations = {}
 levels = 100
 
@@ -240,8 +240,6 @@ for i, (timestamp, array) in enumerate(instructions.items()):
         lobster_buy[i] = lobster_buy[i - 1].copy()
         lobster_sell[i] = lobster_sell[i - 1].copy()
 
-    # Save timestamp
-    timestamps.append(timestamp)
     if timestamp not in cancellations:
         cancellations[timestamp] = 0
 

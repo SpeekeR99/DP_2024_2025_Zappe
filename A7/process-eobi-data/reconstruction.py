@@ -533,7 +533,7 @@ def main():
         title='Price Graph',
         xaxis={'title': 'Timestamp', "tickmode": "array", "tickvals": tickvals, "ticktext": ticklabels},
         yaxis={'title': 'Price', 'side': 'left'},
-        yaxis2={'title': 'Imbalance index', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
+        yaxis2={'title': 'Imbalance index', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True, "range": [-1, 1]},
         yaxis3={'title': 'Incoming messages (per sec)', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
         yaxis4={'title': 'Cancellations rate', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
