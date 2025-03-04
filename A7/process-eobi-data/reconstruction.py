@@ -304,11 +304,14 @@ def imbalance_index_vectorized(asks, bids, alpha=0.5, level=3):
     return (V_bt - V_at) / (V_bt + V_at)
 
 
-def price_graph(lobster_fp, level_depth=3):
+def price_graph(instrument, security, date, level_depth=3):
     """
     Create price graph
     :return: figure
     """
+    # lobster_fp = f"{Config.path}{date}-{instrument}-{security}-lobster.csv"
+    # lobster_fp = "data/lobster_test.csv"
+    lobster_fp = "../pokus_lobsteru.csv"
     lobster = Lobster(lobster_fp)
     data = lobster.load_data()
     # ? why is date thrown away ?
@@ -385,23 +388,38 @@ def main():
     """
     Main function
     """
+    # Instrument, security, date
+    instrument = "FGBL"
+    security = "4128839"
+    date = "20191202"
+
     # Set default OB for dash
-    dash_OB = OB("FGBL", "4128839", "20191202")
+    dash_OB = OB(instrument, security, date)
     api_OB = None
 
     # Price graph
-    lobster_fp = "data/XEUR_20191202_688_4128839_lobster.csv"
-    timestamps, ask_prices, bid_prices, lobster_data = price_graph(lobster_fp, level_depth=1)
+    timestamps, ask_prices, bid_prices, lobster_data = price_graph(instrument, security, date, level_depth=5)
 
     level_depth = 30
     ask_columns = [f'Ask Volume {i}' for i in range(1, level_depth+1)]
     bid_columns = [f'Bid Volume {i}' for i in range(1, level_depth+1)]
 
     lobster_data_matrix = lobster_data[ask_columns + bid_columns].values
-    imbalance_indices = imbalance_index_vectorized(lobster_data_matrix[:, :level_depth], lobster_data_matrix[:, level_depth:], alpha=0.5, level=level_depth)
+    if "Imbalance Index" in lobster_data.columns:
+        imbalance_indices = lobster_data["Imbalance Index"].values
+    else:
+        imbalance_indices = imbalance_index_vectorized(lobster_data_matrix[:, :level_depth], lobster_data_matrix[:, level_depth:], alpha=0.5, level=level_depth)
 
     time_window = 300
-    freqs = get_frequency_of_all_incoming_actions(timestamps, time=time_window)
+    if "Frequency of Incoming Messages" in lobster_data.columns:
+        freqs = lobster_data["Frequency of Incoming Messages"].values
+    else:
+        freqs = get_frequency_of_all_incoming_actions(timestamps, time=time_window)
+
+    if "Cancellations Rate" in lobster_data.columns:
+        cancels = lobster_data["Cancellations Rate"].values
+    else:
+        cancels = np.zeros_like(timestamps)
 
     # Convert timestamps to HH:MM:SS format
     timestamps_graph_labels = [Config.calc_time_from_nansec(int(ts)) for ts in timestamps]
@@ -482,11 +500,22 @@ def main():
         go.Scattergl(
             name='Incoming messages (per sec)',
             yaxis="y3",
-            opacity=0.5
+            opacity=0.25
         ),
         hf_x=timestamps_graph,
         hf_y=freqs,
         hf_marker_color="rgb(255, 0, 215)"
+    )
+
+    price_graph_fig.add_trace(
+        go.Scattergl(
+            name="Cancellations rate",
+            yaxis="y4",
+            opacity=0.25
+        ),
+        hf_x=timestamps_graph,
+        hf_y=cancels,
+        hf_marker_color="rgb(255, 215, 0)"
     )
 
     price_graph_fig.add_trace(
@@ -506,6 +535,7 @@ def main():
         yaxis={'title': 'Price', 'side': 'left'},
         yaxis2={'title': 'Imbalance index', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
         yaxis3={'title': 'Incoming messages (per sec)', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
+        yaxis4={'title': 'Cancellations rate', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
         clickmode='event+select',
         hovermode="x unified"
@@ -726,10 +756,27 @@ def main():
             date = date.replace("-", "")
             # Change only if new values
             if instrument != dash_OB.get_instrument() or security != dash_OB.get_security() or date != dash_OB.get_date():
+                # Downlaod f"{date}-{instrument}-{security}-ob.csv" and f"{date}-{instrument}-{security}-lobster.csv"
+
+
+                nonlocal timestamps, ask_prices, bid_prices, lobster_data, imbalance_indices, freqs, time_window, cancels
                 dash_OB.change_data_df(instrument, security, date)
                 dash_time = Config.calc_time_from_nansec(dash_OB.get_timestamp())
                 seq, tstamp = dash_OB.get_time_seq(dash_OB.get_timestamp())
-                # TODO: update price graph
+                timestamps, ask_prices, bid_prices, lobster_data = price_graph(instrument, security, date, level_depth=1)
+                lobster_data_matrix = lobster_data[ask_columns + bid_columns].values
+                if "Imbalance Index" in lobster_data.columns:
+                    imbalance_indices = lobster_data["Imbalance Index"].values
+                else:
+                    imbalance_indices = imbalance_index_vectorized(lobster_data_matrix[:, :level_depth], lobster_data_matrix[:, level_depth:], alpha=0.5, level=level_depth)
+                if "Frequency of Incoming Messages" in lobster_data.columns:
+                    freqs = lobster_data["Frequency of Incoming Messages"].values
+                else:
+                    freqs = get_frequency_of_all_incoming_actions(timestamps, time=time_window)
+                if "Cancellations Rate" in lobster_data.columns:
+                    cancels = lobster_data["Cancellations Rate"].values
+                else:
+                    cancels = np.zeros_like(timestamps)
             else:
                 return dash_OB.get_instrument(), dash_OB.get_security(), dash_OB.get_date(), dash_time, dash_book, dash_figure, dash_OB.get_executes()
 
