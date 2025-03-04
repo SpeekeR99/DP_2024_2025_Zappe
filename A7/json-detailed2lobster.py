@@ -38,9 +38,9 @@ FULL_ORDER_EXECUTION = 13104
 # HEARTBEAT = 13001
 
 # XEUR_20210319_589_5336359_detailed
-# DATE = "20210319"
-# MARKET_SEGMENT_ID = "589"
-# SECURITY_ID = "5336359"
+DATE = "20210319"
+MARKET_SEGMENT_ID = "589"
+SECURITY_ID = "5336359"
 
 print("Loading data...")
 tic = time.time()
@@ -240,79 +240,15 @@ for i, (timestamp, array) in enumerate(instructions.items()):
     timestamps.append(timestamp)
 
     for j, value in enumerate(array):
-        if value[0] == "ADD":
-            price, display_qty, side = value[1]
-            if side == 1:
-                lobster = lobster_buy
+
+        # # THIS SEEMS LIKE THE BEST SOLUTION, BUT DOESNT YIELD GOOD RESULTS --------------------------------------------
+        #
+        if (value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION"
+                                 or value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY"):
+            if value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
+                _, _, side, price, display_qty = value[1]
             else:
-                lobster = lobster_sell
-
-            for p, q in lobster[i]:
-                if p == price:
-                    q += display_qty
-                    break
-            else:
-                if len(lobster[i]) < levels:
-                    lobster[i].append((price, display_qty))
-                elif side == 1:
-                    # Find the worst price
-                    worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
-                    if price > worst_price:
-                        # Replace the worst price
-                        for k, (p, q) in enumerate(lobster_buy[i]):
-                            if p == worst_price:
-                                lobster_buy[i][k] = (price, display_qty)
-                                break
-                elif side ==2:
-                    # Find the worst price
-                    worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
-                    if price < worst_price:
-                        # Replace the worst price
-                        for k, (p, q) in enumerate(lobster_sell[i]):
-                            if p == worst_price:
-                                lobster_sell[i][k] = (price, display_qty)
-                                break
-
-        elif value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
-            price, display_qty, side, prev_price, prev_display_qty = value[1]
-            if side == 1:
-                lobster = lobster_buy
-            else:
-                lobster = lobster_sell
-
-            # Find the order in the heap
-            found = False
-            for k, (p, q) in enumerate(lobster[i]):
-                if p == prev_price:
-                    found = True
-                    break
-
-            # Modify the order
-            if found and price == prev_price:
-                lobster[i][k] = (price, lobster[i][k][1] - prev_display_qty + display_qty)
-            elif found:
-                lobster[i][k] = (prev_price, lobster[i][k][1] - prev_display_qty)
-
-                found = False
-                for l, (p, q) in enumerate(lobster[i]):
-                    if p == price:
-                        found = True
-                        break
-                else:
-                    # Find the worst price
-                    worst_price = max(lobster[i], key=lambda x: x[0])[0]
-                    if price < worst_price:
-                        # Replace the worst price
-                        for m, (p, q) in enumerate(lobster[i]):
-                            if p == worst_price:
-                                lobster[i][m] = (price, display_qty)
-                                break
-
-                if found:
-                    lobster[i][l] = (price, lobster[i][l][1] + display_qty)
-
-        elif value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
-            price, display_qty, side = value[1]
+                price, display_qty, side = value[1]
             if side == 1:
                 lobster = lobster_buy
             else:
@@ -328,13 +264,199 @@ for i, (timestamp, array) in enumerate(instructions.items()):
             # Delete the order
             if found:
                 lobster[i][k] = (price, q - display_qty)
-                if lobster[i][k][1] <= 0:
+                if q - display_qty <= 0:
                     del lobster[i][k]
 
-        elif value[0] == "ORDER_MASS_DELETE":
+            # else:
+            #     print(f"Order not found: {value}")
+            #     print(f"Lobster: {lobster[i]}")
+
+        if value[0] == "ADD" or value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
+            if value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
+                price, display_qty, side, _, _ = value[1]
+            else:
+                price, display_qty, side = value[1]
+            if side == 1:
+                lobster = lobster_buy
+            else:
+                lobster = lobster_sell
+
+            for p, q in lobster[i]:
+                if p == price:
+                    q += display_qty
+                    break
+            else:  # For-Else
+                if len(lobster[i]) < levels:
+                    lobster[i].append((price, display_qty))
+                elif side == 1:
+                    # Find the worst price
+                    worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
+                    if price > worst_price:
+                        # Replace the worst price
+                        for k, (p, q) in enumerate(lobster_buy[i]):
+                            if p == worst_price:
+                                lobster_buy[i][k] = (price, display_qty)
+                                break
+                elif side == 2:
+                    # Find the worst price
+                    worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
+                    if price < worst_price:
+                        # Replace the worst price
+                        for k, (p, q) in enumerate(lobster_sell[i]):
+                            if p == worst_price:
+                                lobster_sell[i][k] = (price, display_qty)
+                                break
+
+        if value[0] == "ORDER_MASS_DELETE":
             # Delete all orders
             lobster_buy[i] = []
             lobster_sell[i] = []
+        #
+        # # THIS SEEMS LIKE THE BEST SOLUTION, BUT DOESNT YIELD GOOD RESULTS --------------------------------------------
+
+        # if value[0] == "ADD":
+        #     price, display_qty, side = value[1]
+        #     if side == 1:
+        #         lobster = lobster_buy
+        #     else:
+        #         lobster = lobster_sell
+        #
+        #     for p, q in lobster[i]:
+        #         if p == price:
+        #             q += display_qty
+        #             break
+        #     else:  # For-Else
+        #         if len(lobster[i]) < levels:
+        #             lobster[i].append((price, display_qty))
+        #         elif side == 1:
+        #             # Find the worst price
+        #             worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
+        #             if price > worst_price:
+        #                 # Replace the worst price
+        #                 for k, (p, q) in enumerate(lobster_buy[i]):
+        #                     if p == worst_price:
+        #                         lobster_buy[i][k] = (price, display_qty)
+        #                         break
+        #         elif side == 2:
+        #             # Find the worst price
+        #             worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
+        #             if price < worst_price:
+        #                 # Replace the worst price
+        #                 for k, (p, q) in enumerate(lobster_sell[i]):
+        #                     if p == worst_price:
+        #                         lobster_sell[i][k] = (price, display_qty)
+        #                         break
+        #
+        # elif value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
+        #     price, display_qty, side, prev_price, prev_display_qty = value[1]
+        #     if side == 1:
+        #         lobster = lobster_buy
+        #     else:
+        #         lobster = lobster_sell
+        #
+        #     # Find the order in the heap
+        #     found = False
+        #     for k, (p, q) in enumerate(lobster[i]):
+        #         if p == prev_price:
+        #             found = True
+        #             break
+        #
+        #     # Modify the order
+        #     if found and price == prev_price:
+        #         lobster[i][k] = (price, lobster[i][k][1] - prev_display_qty + display_qty)
+        #         # if lobster[i][k][1] <= 0:
+        #         #     del lobster[i][k]
+        #     elif found:
+        #         lobster[i][k] = (prev_price, lobster[i][k][1] - prev_display_qty)
+        #         # if lobster[i][k][1] <= 0:
+        #         #     del lobster[i][k]
+        #
+        #         found = False
+        #         for l, (p, q) in enumerate(lobster[i]):
+        #             if p == price:
+        #                 found = True
+        #                 break
+        #         else:
+        #             # if len(lobster[i]) < levels:
+        #             #     lobster[i].append((price, display_qty))
+        #             # elif side == 1:
+        #             #     # Find the worst price
+        #             #     worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
+        #             #     if price > worst_price:
+        #             #         # Replace the worst price
+        #             #         for m, (p, q) in enumerate(lobster_buy[i]):
+        #             #             if p == worst_price:
+        #             #                 lobster_buy[i][m] = (price, display_qty)
+        #             #                 break
+        #             # elif side == 2:
+        #             #     # Find the worst price
+        #             #     worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
+        #             #     if price < worst_price:
+        #             #         # Replace the worst price
+        #             #         for m, (p, q) in enumerate(lobster_sell[i]):
+        #             #             if p == worst_price:
+        #             #                 lobster_sell[i][m] = (price, display_qty)
+        #             #                 break
+        #             # Find the worst price
+        #             # else:
+        #             worst_price = max(lobster[i], key=lambda x: x[0])[0]
+        #             if price < worst_price:
+        #                 # Replace the worst price
+        #                 for m, (p, q) in enumerate(lobster[i]):
+        #                     if p == worst_price:
+        #                         lobster[i][m] = (price, display_qty)
+        #                         break
+        #
+        #         if found:
+        #             lobster[i][l] = (price, lobster[i][l][1] + display_qty)
+        #
+        #     # # Not found at all
+        #     # else:
+        #     #     if len(lobster[i]) < levels:
+        #     #         lobster[i].append((price, display_qty))
+        #     #     elif side == 1:
+        #     #         # Find the worst price
+        #     #         worst_price = min(lobster_buy[i], key=lambda x: x[0])[0]
+        #     #         if price > worst_price:
+        #     #             # Replace the worst price
+        #     #             for l, (p, q) in enumerate(lobster_buy[i]):
+        #     #                 if p == worst_price:
+        #     #                     lobster_buy[i][l] = (price, display_qty)
+        #     #                     break
+        #     #     elif side == 2:
+        #     #         # Find the worst price
+        #     #         worst_price = max(lobster_sell[i], key=lambda x: x[0])[0]
+        #     #         if price < worst_price:
+        #     #             # Replace the worst price
+        #     #             for l, (p, q) in enumerate(lobster_sell[i]):
+        #     #                 if p == worst_price:
+        #     #                     lobster_sell[i][l] = (price, display_qty)
+        #     #                     break
+        #
+        # elif value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
+        #     price, display_qty, side = value[1]
+        #     if side == 1:
+        #         lobster = lobster_buy
+        #     else:
+        #         lobster = lobster_sell
+        #
+        #     # Find the order in the heap
+        #     found = False
+        #     for k, (p, q) in enumerate(lobster[i]):
+        #         if p == price:
+        #             found = True
+        #             break
+        #
+        #     # Delete the order
+        #     if found:
+        #         lobster[i][k] = (price, q - display_qty)
+        #         if lobster[i][k][1] <= 0:
+        #             del lobster[i][k]
+        #
+        # elif value[0] == "ORDER_MASS_DELETE":
+        #     # Delete all orders
+        #     lobster_buy[i] = []
+        #     lobster_sell[i] = []
 
 tac = time.time()
 print(f"Created orderbook in {tac - tic:.2f} seconds")
@@ -357,6 +479,7 @@ lobster_header = "Time,"
 for i in range(levels):
     lobster_header += f"Ask Price {i + 1},Ask Volume {i + 1},Bid Price {i + 1},Bid Volume {i + 1},"
 lobster_header = lobster_header[:-1]  # Remove last comma
+lobster_header = lobster_header.split(",")
 
 OUTPUT_FILE_PATH = "pokus_lobsteru.csv"
 
@@ -366,7 +489,7 @@ tic = time.time()
 # Export to CSV
 with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
     writer = csv.writer(fp)
-    writer.writerow(lobster_header.split(","))  # Write header
+    writer.writerow(lobster_header)  # Write header
 
     for i in range(max_index):
         # row = [i]
