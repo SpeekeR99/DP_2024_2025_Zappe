@@ -32,9 +32,13 @@ FULL_ORDER_EXECUTION = 13104
 
 print("Loading data...")
 tic = time.time()
-# TODO: Change the path if needed
-with open(f"process-eobi-data/data/{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_detailed.json", "r") as fp:
-    data = json.load(fp)
+if len(sys.argv) == 2:
+    with open(sys.argv[1], "r") as fp:
+        data = json.load(fp)
+else:
+    # TODO: Change the default pathing from "process-eobi-data/data" to "data" or just "." later on!
+    with open(f"process-eobi-data/data/{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_detailed.json", "r") as fp:
+        data = json.load(fp)
 tac = time.time()
 print(f"Data loaded in {tac - tic:.2f} seconds")
 
@@ -73,10 +77,16 @@ for i, part in enumerate(data):
                 DisplayQty = float(transaction["OrderDetails"]["DisplayQty"]) / 1e8
                 Side = transaction["OrderDetails"]["Side"]
 
+                # TrdRegTSPrevTimePriority -- yields worse results for some reason
                 if TrdRegTSTimeIn in instructions:
-                    instructions[TrdRegTSTimeIn].append(("MODIFY", (Price, DisplayQty, Side, PrevPrice, PrevDisplayQty)))
+                    instructions[TrdRegTSTimeIn].append(("DELETE", (PrevPrice, PrevDisplayQty, Side)))
                 else:
-                    instructions[TrdRegTSTimeIn] = [("MODIFY", (Price, DisplayQty, Side, PrevPrice, PrevDisplayQty))]
+                    instructions[TrdRegTSTimeIn] = [("DELETE", (PrevPrice, PrevDisplayQty, Side))]
+
+                if TrdRegTSTimeIn in instructions:
+                    instructions[TrdRegTSTimeIn].append(("ADD", (Price, DisplayQty, Side)))
+                else:
+                    instructions[TrdRegTSTimeIn] = [("ADD", (Price, DisplayQty, Side))]
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MODIFY_SAME_PRIORITY:
                 # TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
@@ -89,9 +99,10 @@ for i, part in enumerate(data):
                 Side = transaction["OrderDetails"]["Side"]
 
                 if TrdRegTSTimePriority in instructions:
-                    instructions[TrdRegTSTimePriority].append(("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty)))
+                    instructions[TrdRegTSTimePriority].append(("DELETE", (Price, PrevDisplayQty, Side)))
+                    instructions[TrdRegTSTimePriority].append(("ADD", (Price, DisplayQty, Side)))
                 else:
-                    instructions[TrdRegTSTimePriority] = [("MODIFY_SAME_PRIORITY", (Price, DisplayQty, Side, Price, PrevDisplayQty))]
+                    instructions[TrdRegTSTimePriority] = [("DELETE", (Price, PrevDisplayQty, Side)), ("ADD", (Price, DisplayQty, Side))]
 
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_DELETE:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
@@ -175,12 +186,8 @@ for i, (timestamp, array) in enumerate(instructions.items()):
         cancellations[timestamp] = 0
 
     for j, value in enumerate(array):
-        if (value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION"
-                                 or value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY"):
-            if value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
-                _, _, side, price, display_qty = value[1]
-            else:
-                price, display_qty, side = value[1]
+        if value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
+            price, display_qty, side = value[1]
 
             if side == 1:
                 lobster = lobster_buy
@@ -207,11 +214,8 @@ for i, (timestamp, array) in enumerate(instructions.items()):
             #     print(f"Order not found: {value}")
             #     print(f"Lobster: {lobster[i]}")
 
-        if value[0] == "ADD" or value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
-            if value[0] == "MODIFY" or value[0] == "MODIFY_SAME_PRIORITY":
-                price, display_qty, side, _, _ = value[1]
-            else:
-                price, display_qty, side = value[1]
+        if value[0] == "ADD":
+            price, display_qty, side = value[1]
 
             if side == 1:
                 lobster = lobster_buy
@@ -271,6 +275,7 @@ for i in range(levels):
 lobster_header = lobster_header[:-1]  # Remove last comma
 lobster_header = lobster_header.split(",")
 
+# TODO: Change this to some sys.argv or something better later on!
 OUTPUT_FILE_PATH = "pokus_lobsteru.csv"
 
 print("Exporting to CSV...")
