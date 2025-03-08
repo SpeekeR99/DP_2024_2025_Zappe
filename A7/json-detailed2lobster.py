@@ -43,6 +43,7 @@ tac = time.time()
 print(f"Data loaded in {tac - tic:.2f} seconds")
 
 # Key - Timestamp | Value - (What to do, (Price, Quantity, Side, ...))
+# Alternatively with MsgSeqNum possibly: # Key - MsgSeqNum | Value - (Timestamp, What to do, (Price, ...))
 instructions = {}
 
 print("Processing data...")
@@ -52,6 +53,8 @@ for i, part in enumerate(data):
 
     for transaction_array in part["Transactions"]:
         for transaction in transaction_array:
+            # MsgSeqNum = transaction["MessageHeader"]["MsgSeqNum"]
+
             if transaction["MessageHeader"]["TemplateID"] == ORDER_ADD:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
                 # TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
@@ -65,11 +68,13 @@ for i, part in enumerate(data):
                 else:
                     instructions[TrdRegTSTimeIn] = [("ADD", (Price, DisplayQty, Side))]
 
+                # instructions[MsgSeqNum] = [(TrdRegTSTimePriority, "ADD", (Price, DisplayQty, Side))]
+
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MODIFY:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
                 # TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
 
-                TrdRegTSPrevTimePriority = transaction["TrdRegTSPrevTimePriority"]
+                # TrdRegTSPrevTimePriority = transaction["TrdRegTSPrevTimePriority"]
                 PrevPrice = float(transaction["PrevPrice"]) / 1e8
                 PrevDisplayQty = float(transaction["PrevDisplayQty"]) / 1e8
 
@@ -88,9 +93,13 @@ for i, part in enumerate(data):
                 else:
                     instructions[TrdRegTSTimeIn] = [("ADD", (Price, DisplayQty, Side))]
 
+                # instructions[MsgSeqNum] = [(TrdRegTSTimePriority, "DELETE", (PrevPrice, PrevDisplayQty, Side)),
+                #                            (TrdRegTSTimePriority, "ADD", (Price, DisplayQty, Side))]
+
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MODIFY_SAME_PRIORITY:
                 # TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
                 TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
+                # TransactTime = transaction["TransactTime"]
 
                 PrevDisplayQty = float(transaction["PrevDisplayQty"]) / 1e8
 
@@ -104,9 +113,13 @@ for i, part in enumerate(data):
                 else:
                     instructions[TrdRegTSTimePriority] = [("DELETE", (Price, PrevDisplayQty, Side)), ("ADD", (Price, DisplayQty, Side))]
 
+                # instructions[MsgSeqNum] = [(TransactTime, "DELETE", (Price, PrevDisplayQty, Side)),
+                #                            (TransactTime, "ADD", (Price, DisplayQty, Side))]
+
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_DELETE:
                 TrdRegTSTimeIn = transaction["TrdRegTSTimeIn"]
                 # TrdRegTSTimePriority = transaction["OrderDetails"]["TrdRegTSTimePriority"]
+                # TransactTime = transaction["TransactTime"]
 
                 Price = float(transaction["OrderDetails"]["Price"]) / 1e8
                 DisplayQty = float(transaction["OrderDetails"]["DisplayQty"]) / 1e8
@@ -117,6 +130,8 @@ for i, part in enumerate(data):
                 else:
                     instructions[TrdRegTSTimeIn] = [("DELETE", (Price, DisplayQty, Side))]
 
+                # instructions[MsgSeqNum] = [(TransactTime, "DELETE", (Price, DisplayQty, Side))]
+
             elif transaction["MessageHeader"]["TemplateID"] == ORDER_MASS_DELETE:
                 TransactTime = transaction["TransactTime"]
 
@@ -124,6 +139,8 @@ for i, part in enumerate(data):
                     instructions[TransactTime].append(("ORDER_MASS_DELETE", ()))
                 else:
                     instructions[TransactTime] = [("ORDER_MASS_DELETE", ())]
+
+                # instructions[MsgSeqNum] = [(TransactTime, "ORDER_MASS_DELETE", ())]
 
             elif transaction["MessageHeader"]["TemplateID"] == PARTIAL_ORDER_EXECUTION:
                 TrdRegTSTimePriority = transaction["TrdRegTSTimePriority"]
@@ -138,6 +155,8 @@ for i, part in enumerate(data):
                 else:
                     instructions[TrdRegTSTimePriority] = [("PARTIAL_ORDER_EXECUTION", (LastPx, LastQty, Side))]
 
+                # instructions[MsgSeqNum] = [(TrdRegTSTimePriority, "PARTIAL_ORDER_EXECUTION", (LastPx, LastQty, Side))]
+
             elif transaction["MessageHeader"]["TemplateID"] == FULL_ORDER_EXECUTION:
                 TrdRegTSTimePriority = transaction["TrdRegTSTimePriority"]
 
@@ -151,6 +170,8 @@ for i, part in enumerate(data):
                 else:
                     instructions[TrdRegTSTimePriority] = [("FULL_ORDER_EXECUTION", (LastPx, LastQty, Side))]
 
+                # instructions[MsgSeqNum] = [(TrdRegTSTimePriority, "FULL_ORDER_EXECUTION", (LastPx, LastQty, Side))]
+
 tac = time.time()
 
 max_index = len(instructions)
@@ -160,11 +181,13 @@ print("Processing done")
 # Variable "data" is now useless, free up memory
 del data
 
+# # Sort the instructions by key
+# instructions = dict(sorted(instructions.items()))
+
 # Create true orderbook now
 print("Creating orderbook...")
 
 # Initialize data structures
-max_index = len(instructions)
 lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
 timestamps = list(dict(sorted(instructions.items())).keys())
