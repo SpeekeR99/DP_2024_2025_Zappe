@@ -6,6 +6,8 @@ from sklearn.ensemble import IsolationForest
 # filepath = "../data/lobster_best_prices_only.csv"
 filepath = "../../A7/pokus_lobsteru.csv"
 data = pd.read_csv(filepath)
+# data = data[["Time", "Ask Price 1", "Bid Price 1", "Imbalance Index", "Frequency of Incoming Messages", "Cancellations Rate"]]
+data = data.head(10000)
 
 # Get the indices of the columns
 try:
@@ -19,6 +21,7 @@ except KeyError as e:
     print(f"The input file does not contain the necessary column {e}.")
     exit(1)
 
+# Transform the data to numpy
 data_numpy = data.to_numpy()
 mid_price = (data_numpy[:, ask_price_idx] + data_numpy[:, bid_price_idx]) / 2
 
@@ -36,6 +39,7 @@ anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "c
 
 # Plot the anomalies
 fig, axes = plt.subplots(2, 2, figsize=(20, 10))
+fig.suptitle("Isolation Forest")
 
 axes[0][0].scatter(data_numpy[:, time_idx], mid_price, color="green", label="Normal Mid Price")
 axes[0][0].scatter(data_numpy[y_pred == -1, time_idx], mid_price[y_pred == -1], color="red", alpha=anomaly_proba[y_pred == -1], label="Anomaly Mid Price")
