@@ -441,6 +441,13 @@ data["Imbalance Index"] = imbalance_indices
 data["Frequency of Incoming Messages"] = freqs
 data["Cancellations Rate"] = cancellation_rate
 
+# Filter out the timestamps that are not from the correct date
+start_nanosec = datetime.datetime.strptime(DATE, "%Y%m%d").timestamp() * 1e9
+end_nanosec = start_nanosec + 24 * 60 * 60 * 1e9
+
+timestamps = np.array(data["Time"])
+data = data[(timestamps >= start_nanosec) & (timestamps <= end_nanosec)]
+
 # Export to CSV
 print("Exporting augmented CSV...")
 data.to_csv(OUTPUT_FILE_PATH, index=False)
