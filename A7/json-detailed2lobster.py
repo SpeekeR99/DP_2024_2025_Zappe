@@ -2,9 +2,6 @@ import sys
 import json
 import time
 import csv
-import numpy as np
-import pandas as pd
-import datetime
 
 MARKET_ID = "XEUR"
 DATE = "20191202"
@@ -21,6 +18,8 @@ if len(sys.argv) == 5:
     DATE = sys.argv[2]
     MARKET_SEGMENT_ID = sys.argv[3]
     SECURITY_ID = sys.argv[4]
+
+OUTPUT_FILE_PATH = f"{DATE}-{MARKET_SEGMENT_ID}-{SECURITY_ID}-lobster.csv"
 
 ORDER_ADD = 13100
 ORDER_MODIFY = 13101
@@ -295,11 +294,8 @@ levels = 30
 lobster_header = "Time,"
 for i in range(levels):
     lobster_header += f"Ask Price {i + 1},Ask Volume {i + 1},Bid Price {i + 1},Bid Volume {i + 1},"
-lobster_header = lobster_header[:-1]  # Remove last comma
+lobster_header += "Cancellations"  # This must be saved for the future calculation of Cancellations Rate
 lobster_header = lobster_header.split(",")
-
-# TODO: Change this to some sys.argv or something better later on!
-OUTPUT_FILE_PATH = "pokus_lobsteru.csv"
 
 print("Exporting to CSV...")
 
@@ -312,6 +308,7 @@ with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
     for i in range(max_index):
         # row = [i]
         row = [timestamps[i]]  # Start with timestamp
+
         for level in range(levels):
             # Add sell levels
             if level < len(lobster_sell[i]):
@@ -325,132 +322,9 @@ with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
             else:
                 row.extend(["", ""])  # Empty values
 
+        row.extend([cancellations[timestamps[i]]])  # Add cancellations
+
         writer.writerow(row)  # Write row to CSV
 
 toc = time.time()
 print(f"Exported to CSV in {toc - tic:.2f} seconds")
-
-# Variable "lobster_buy" and "lobster_sell" are now useless, free up memory
-del lobster_buy
-del lobster_sell
-
-# Add imbalance index, frequency of incoming messages, cancellations rate to the CSV
-print("Augmenting CSV with imbalance index, frequency of incoming messages, cancellations rate...")
-tic = time.time()
-
-class Config:
-    @staticmethod
-    def calc_nansec_from_time(time: str) -> int:
-        """
-        :param time: time in format hh:mm:ss.nnnnnnnnn or hh:mm:ss
-        Returns number of nanoseconds from time in format hh:mm:ss.nnnnnnnnn or hh:mm:ss
-        """
-        time = time.split(":")
-        nansec = time[-1].split(".")
-        return int(int(time[0]) * 36e11 + int(time[1]) * 6e10 + int(nansec[0]) * 1e9 + (int(nansec[1].ljust(9, "0")) if len(nansec) == 2 else 0))
-
-    @staticmethod
-    def calc_time_from_nansec(nansecs: int) -> str:
-        """
-        :param nansecs: number of nanoseconds
-        Returns time in format hh:mm:ss.nnnnnnnnn from given nanoseconds
-        """
-        s = nansecs // 1e9
-        delta = datetime.timedelta(seconds=s)
-        ns = str(int(nansecs % 1e9)).zfill(9)
-        datetime_obj = (datetime.datetime.min + delta).time()
-        time_formatted = datetime_obj.strftime('%H:%M:%S')
-        time = time_formatted + "." + ns
-        return time
-
-
-def imbalance_index_vectorized(asks, bids, alpha=0.5, level=3):
-    """
-    Calculate imbalance index for a given orderbook.
-    :param asks: numpy matrix of ask sizes (volumes)
-    :param bids: numpy matrix of bid sizes (volumes)
-    :param alpha: parameter for imbalance index
-    :param level: number of levels to consider
-    :return: imbalance index
-    """
-    assert asks.shape[1] >= level and bids.shape[1] >= level, "Not enough levels in orderbook"
-    assert alpha > 0, "Alpha must be positive"
-    assert level > 0, "Level must be positive"
-
-    # Calculate imbalance index
-    V_bt = np.sum(bids[:, :level] * np.exp(-alpha * np.arange(0, level)), axis=1)
-    V_at = np.sum(asks[:, :level] * np.exp(-alpha * np.arange(0, level)), axis=1)
-    return (V_bt - V_at) / (V_bt + V_at)
-
-
-def get_frequency_of_all_incoming_actions(timestamps, time=300):
-    """
-    Returns the frequency of incoming actions (messages) in the last *time* seconds for all timestamps
-    :param timestamps: Array of timestamps (in nano seconds)
-    :param time: Time window in seconds (default value is 300)
-    :return: List of frequencies of incoming actions (messages) for all timestamps
-    """
-    # Convert time to nanoseconds
-    time_ns = time * 1e9
-
-    # Convert timestamps to a numpy array
-    timestamps = np.array(timestamps)
-
-    # Initialize two pointers at the end of the timestamps array
-    start, end = len(timestamps) - 1, len(timestamps) - 1
-
-    # Initialize an array to hold the frequencies
-    freqs = np.zeros_like(timestamps)
-
-    # Calculate the frequency for each timestamp
-    for start in range(len(timestamps)-1, -1, -1):
-        while end >= 0 and timestamps[start] - timestamps[end] <= time_ns:
-            end -= 1
-        freqs[start] = start - end
-
-    return freqs / time
-
-
-data = pd.read_csv(OUTPUT_FILE_PATH, delimiter=",")
-
-ask_columns = [f'Ask Volume {i}' for i in range(1, levels+1)]
-bid_columns = [f'Bid Volume {i}' for i in range(1, levels+1)]
-
-# Imbalance index
-lobster_data_matrix = data[ask_columns + bid_columns].values
-imbalance_indices = imbalance_index_vectorized(lobster_data_matrix[:, :levels], lobster_data_matrix[:, levels:], alpha=0.5, level=levels)
-
-# Frequency of incoming messages
-time_window = 300
-timestamps_orig = data["Time"].tolist()
-temp = [Config.calc_time_from_nansec(t) for t in timestamps_orig]
-timestamps = [Config.calc_nansec_from_time(t) for t in temp]
-freqs = get_frequency_of_all_incoming_actions(timestamps, time=time_window)
-
-# Cancellations rate
-# Sliding average over the last *time_window* seconds
-cancellation_rate = np.zeros_like(timestamps, dtype=float)
-cancellations = list(cancellations.values())
-for i in range(len(timestamps)):
-    start = max(0, i - time_window)
-    end = i
-    cancellation_rate[i] = np.sum([cancellations[j] for j in range(start, end)])
-
-# Add the new columns to the CSV
-data["Imbalance Index"] = imbalance_indices
-data["Frequency of Incoming Messages"] = freqs
-data["Cancellations Rate"] = cancellation_rate
-
-# Filter out the timestamps that are not from the correct date
-start_nanosec = datetime.datetime.strptime(DATE, "%Y%m%d").timestamp() * 1e9
-end_nanosec = start_nanosec + 24 * 60 * 60 * 1e9
-
-timestamps = np.array(data["Time"])
-data = data[(timestamps >= start_nanosec) & (timestamps <= end_nanosec)]
-
-# Export to CSV
-print("Exporting augmented CSV...")
-data.to_csv(OUTPUT_FILE_PATH, index=False)
-
-tac = time.time()
-print(f"Augmented CSV in {tac - tic:.2f} seconds")
