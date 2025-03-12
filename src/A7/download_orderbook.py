@@ -19,7 +19,7 @@ MARKET_SEGMENT_ID = sys.argv[3]
 SECURITY_ID = sys.argv[4]
 
 userId = "zapped99@ntis.zcu.cz"
-with open('a7token.txt', 'r') as file:
+with open('../../A7/process-eobi-data/a7token.txt', 'r') as file:
     API_TOKEN = file.read().rstrip()
 
 url = 'https://a7.deutsche-boerse.com/api/v1/'
