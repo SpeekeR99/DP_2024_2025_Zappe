@@ -71,7 +71,7 @@ def main():
     # Config
     # -----------------------------------
     delim = ','
-    path = "raw/"  # path to data files
+    path = "../../data/raw/"  # path to data files
     output_format_params = ["i", "PARENT_ID", "ID", "TrdRegTSTimeIn", "TrdRegTSTimePriority", "Side", "Price", "DisplayQty", "op", "Trans", "Prio"]
     qty_rounder = 10000
 
