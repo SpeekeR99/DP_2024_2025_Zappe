@@ -25,6 +25,7 @@ OUTPUT_FILE_PATH = f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_lobster_augme
 
 # Add imbalance index, frequency of incoming messages, cancellations rate, etc. to the CSV
 print("Augmenting CSV with extra features")
+print("Extracting features...")
 tic = time.time()
 
 
@@ -207,6 +208,57 @@ def get_unbalanced_quoting(data, timestamps, levels=5, time=1):
     return unbalanced_quoting
 
 
+def get_low_execution_proba(data, timestamps, levels=5, time=1):
+    """
+    Low Execution Probability
+    LE_{i,s(d)} = max_{t∈s(d)}(|AskSizeLevel2to5_{i,t} − BidSizeLevel2to5_{i,t}|/AskSize_{i,t} + BidSize_{i,t})
+    where: AskSizeLevel2to5_{i,t} is the cumulative depth on ask level 2 to 5 of security i at time t
+           BidSizeLevel2to5_{i,t} is the cumulative depth on bid level 2 to 5 of security i at time t
+           AskSize_{i,t} is the cumulative depth (aggregate order quantity) on the top 5 ask levels
+           of security i at time t
+           BidSize_{i,t} is the cumulative depth on the top 5 bid levels of security i at time t
+           t indexes time (order book events)
+           s is a 1-second interval and d is 1-day interval.
+    :param data: Dataframe with the orderbook data
+    :param timestamps: Array of timestamps
+    :param levels: Number of levels to consider (default value is 5)
+    :param time: Time window in seconds (default value is 1)
+    :return: List of low execution probabilities
+    """
+    # Convert time to nanoseconds
+    time_ns = time * 1e9
+
+    # Initialize two pointers at the end of the timestamps array
+    start, end = len(timestamps) - 1, len(timestamps) - 1
+
+    # Prepare the data
+    ask_volume_names = [f"Ask Volume {i}" for i in range(1, levels+1)]
+    bid_volume_names = [f"Bid Volume {i}" for i in range(1, levels+1)]
+    ask_volumes = np.array([data[name].values for name in ask_volume_names])
+    bid_volumes = np.array([data[name].values for name in bid_volume_names])
+    ask_volumes_2_5 = np.sum(ask_volumes[1:], axis=0)
+    bid_volumes_2_5 = np.sum(bid_volumes[1:], axis=0)
+
+    # Initialize an array to hold the low execution probabilities
+    low_execution_proba = np.zeros_like(timestamps, dtype=float)
+
+    # Calculate the low execution probabilities for each timestamp
+    for start in range(len(timestamps)-1, -1, -1):
+        while end >= 0 and timestamps[start] - timestamps[end] <= time_ns:
+            end -= 1
+        if end < start and start - end > 0:  # Ensure the sliced arrays are non-empty
+            ask_bid_sum = ask_volumes[:, end:start] + bid_volumes[:, end:start]
+            if ask_bid_sum.size > 0:  # Ensure the sum array is non-empty
+                ask_bid_sum[ask_bid_sum == 0] = np.nan  # Avoid division by zero
+                low_execution_proba[start] = np.nanmax(np.abs(ask_volumes_2_5[end:start] - bid_volumes_2_5[end:start]) / ask_bid_sum)
+            else:
+                low_execution_proba[start] = 0
+        else:  # If the sliced arrays are empty, set the low execution probability to 0 (means no activity in that second)
+            low_execution_proba[start] = 0
+
+    return low_execution_proba
+
+
 levels = 30
 data = pd.read_csv(INPUT_FILE_PATH, delimiter=",")
 
@@ -231,6 +283,9 @@ high_quoting_activity = get_high_quoting_activity(data, timestamps, levels=5, ti
 # Unbalanced Quoting
 unbalanced_quoting = get_unbalanced_quoting(data, timestamps, levels=5, time=1)
 
+# Low Execution Probability
+low_execution_proba = get_low_execution_proba(data, timestamps, levels=5, time=1)
+
 # Add the new columns to the CSV
 data["Imbalance Index"] = imbalance_indices
 data["Frequency of Incoming Messages"] = freqs
@@ -238,6 +293,7 @@ data = data.drop(columns=["Cancellations"])  # Drop raw cancellations column
 data["Cancellations Rate"] = cancellation_rate
 data["High Quoting Activity"] = high_quoting_activity
 data["Unbalanced Quoting"] = unbalanced_quoting
+data["Low Execution Probability"] = low_execution_proba
 
 # Filter out the timestamps that are not from the correct date
 start_nanosec = datetime.datetime.strptime(DATE, "%Y%m%d").timestamp() * 1e9
@@ -246,8 +302,13 @@ end_nanosec = start_nanosec + 24 * 60 * 60 * 1e9
 timestamps = np.array(data["Time"])
 data = data[(timestamps >= start_nanosec) & (timestamps <= end_nanosec)]
 
+tac = time.time()
+print(f"Features extracted in {tac - tic:.2f} seconds")
+
 # Export to CSV
+tic = time.time()
 print("Exporting augmented CSV...")
+
 data.to_csv(OUTPUT_FILE_PATH, index=False)
 
 tac = time.time()
