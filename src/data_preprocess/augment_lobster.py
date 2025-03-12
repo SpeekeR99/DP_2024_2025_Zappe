@@ -94,7 +94,7 @@ def get_cancelations_rate(data, timestamps, time=300):
     start, end = len(timestamps) - 1, len(timestamps) - 1
 
     # Prepare the data
-    cancellations = data["Cancellations"].values
+    cancellations = data["Cancellations Buy"].values + data["Cancellations Sell"].values
 
     # Initialize an array to hold the cancellations rate
     cancellation_rate = np.zeros_like(timestamps, dtype=float)
@@ -322,6 +322,56 @@ def get_trades_oppose_quotes(data, timestamps, levels=5, time=1):
     return trades_oppose_quotes
 
 
+def get_cancels_oppose_trades(data, timestamps, levels=5, time=1):
+    """
+    Cancels Oppose Trades
+    COT_{i,s} = 1 if CIB^{Ask}_{i,s-1} > 10 % AND Trade^{Bid}_{i,s} = 1 OR
+                1 if CIB^{Bid}_{i,s-1} > 10 % AND Trade^{Ask}_{i,s} = 1 OR
+                0 otherwise
+    where: Trade^{Ask}_{i,s} = 1 if there is a trade on the ask side during second s
+           Trade^{Bid}_{i,s} = 1 if there is a trade on the bid side during second s
+           s is a 1-second interval.
+           The cancel imbalance variables, CIB^{Ask}_{i,s-1} and CIB^{Bid}_{i,s-1}, are defined as:
+           ...
+           (I will be using our better cancellation rate instead with 10th percentile threshold)
+    :param data: Dataframe with the orderbook data
+    :param timestamps: Array of timestamps
+    :param levels: Number of levels to consider (default value is 5)
+    :param time: Time window in seconds (default value is 1)
+    :return: List of cancels oppose trades
+    """
+    # Convert time to nanoseconds
+    time_ns = time * 1e9
+
+    # Initialize two pointers at the end of the timestamps array
+    start, end = len(timestamps) - 1, len(timestamps) - 1
+
+    # Prepare the data
+    trade_on_buy = data["Trades Buy"].values
+    trade_on_sell = data["Trades Sell"].values
+
+    # Get the cancellation rates
+    cancellation_rate = get_cancelations_rate(data, timestamps, time=time)
+    thresh = np.percentile(cancellation_rate, 10)
+
+    # Initialize an array to hold the trades oppose quotes
+    cancels_oppose_trades = np.zeros_like(timestamps, dtype=int)
+
+    # Calculate the trades oppose quotes for each timestamp
+    for start in range(len(timestamps)-1, -1, -1):
+        while end >= 0 and timestamps[start] - timestamps[end] <= time_ns:
+            end -= 1
+        if end < start and start - end > 0:
+            if cancellation_rate[end] > thresh and trade_on_sell[start] != 0:
+                cancels_oppose_trades[start] = 1
+            elif cancellation_rate[end] > thresh and trade_on_buy[start] != 0:
+                cancels_oppose_trades[start] = 1
+            else:
+                cancels_oppose_trades[start] = 0
+
+    return cancels_oppose_trades
+
+
 data = pd.read_csv(INPUT_FILE_PATH, delimiter=",")
 timestamps = np.array(data["Time"])
 
@@ -346,16 +396,20 @@ low_execution_proba = get_low_execution_proba(data, timestamps, levels=5, time=1
 # Trades Oppose Quotes
 trades_oppose_quotes = get_trades_oppose_quotes(data, timestamps, levels=5, time=1)
 
-# Add the new columns to the CSV
+# Cancels Oppose Trades
+cancels_oppose_trades = get_cancels_oppose_trades(data, timestamps, levels=5, time=1)
+
+# Add the new columns to the CSV and drop the old "raw" ones
+data = data.drop(columns=["Cancellations Buy", "Cancellations Sell"])  # Drop raw cancellations column
+data = data.drop(columns=["Trades Buy", "Trades Sell"])  # Drop raw trades columns
 data["Imbalance Index"] = imbalance_indices
 data["Frequency of Incoming Messages"] = freqs
-data = data.drop(columns=["Cancellations"])  # Drop raw cancellations column
 data["Cancellations Rate"] = cancellation_rate
 data["High Quoting Activity"] = high_quoting_activity
 data["Unbalanced Quoting"] = unbalanced_quoting
 data["Low Execution Probability"] = low_execution_proba
-data = data.drop(columns=["Trades Buy", "Trades Sell"])  # Drop raw trades columns
 data["Trades Oppose Quotes"] = trades_oppose_quotes
+data["Cancels Oppose Trades"] = cancels_oppose_trades
 
 # Filter out the timestamps that are not from the correct date
 start_nanosec = datetime.datetime.strptime(DATE, "%Y%m%d").timestamp() * 1e9
