@@ -1,3 +1,4 @@
+import os
 import pandas
 import matplotlib.pyplot as plt
 
@@ -6,6 +7,8 @@ MARKET_SEGMENT_ID = "688"
 SECURITY_ID = "4128839"
 
 FILE_PATH = f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_lobster_augmented.csv"
+if not os.path.exists(f"img/features/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}"):
+    os.makedirs(f"img/features/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}")
 
 data = pandas.read_csv(FILE_PATH)
 
@@ -20,4 +23,5 @@ for column in data.columns:
     plt.scatter(data["Time"], data[column], color="black", label=column)
 
     plt.grid()
+    plt.savefig(f"img/features/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}/{column}.png")
     plt.show()
