@@ -311,7 +311,7 @@ def price_graph(instrument, security, date, level_depth=3):
     """
     # lobster_fp = f"{Config.path}{date}-{instrument}-{security}-lobster.csv"
     # lobster_fp = "data/lobster_test.csv"
-    lobster_fp = "../pokus_lobsteru.csv"
+    lobster_fp = f"../{date}-{instrument}-{security}-lobster-augmented.csv"
     lobster = Lobster(lobster_fp)
     data = lobster.load_data()
     # ? why is date thrown away ?
