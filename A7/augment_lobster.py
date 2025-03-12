@@ -27,31 +27,6 @@ OUTPUT_FILE_PATH = f"{DATE}-{MARKET_SEGMENT_ID}-{SECURITY_ID}-lobster-augmented.
 print("Augmenting CSV with extra features")
 tic = time.time()
 
-class Config:
-    @staticmethod
-    def calc_nansec_from_time(time: str) -> int:
-        """
-        :param time: time in format hh:mm:ss.nnnnnnnnn or hh:mm:ss
-        Returns number of nanoseconds from time in format hh:mm:ss.nnnnnnnnn or hh:mm:ss
-        """
-        time = time.split(":")
-        nansec = time[-1].split(".")
-        return int(int(time[0]) * 36e11 + int(time[1]) * 6e10 + int(nansec[0]) * 1e9 + (int(nansec[1].ljust(9, "0")) if len(nansec) == 2 else 0))
-
-    @staticmethod
-    def calc_time_from_nansec(nansecs: int) -> str:
-        """
-        :param nansecs: number of nanoseconds
-        Returns time in format hh:mm:ss.nnnnnnnnn from given nanoseconds
-        """
-        s = nansecs // 1e9
-        delta = datetime.timedelta(seconds=s)
-        ns = str(int(nansecs % 1e9)).zfill(9)
-        datetime_obj = (datetime.datetime.min + delta).time()
-        time_formatted = datetime_obj.strftime('%H:%M:%S')
-        time = time_formatted + "." + ns
-        return time
-
 
 def imbalance_index_vectorized(asks, bids, alpha=0.5, level=3):
     """
@@ -188,9 +163,7 @@ data = pd.read_csv(INPUT_FILE_PATH, delimiter=",")
 
 ask_columns = [f'Ask Volume {i}' for i in range(1, levels+1)]
 bid_columns = [f'Bid Volume {i}' for i in range(1, levels+1)]
-timestamps_orig = data["Time"].tolist()
-temp = [Config.calc_time_from_nansec(t) for t in timestamps_orig]
-timestamps = np.array([Config.calc_nansec_from_time(t) for t in temp])
+timestamps = data["Time"].tolist()
 
 # Imbalance index
 lobster_data_matrix = data[ask_columns + bid_columns].values

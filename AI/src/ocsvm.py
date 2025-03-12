@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.svm import OneClassSVM
@@ -7,7 +8,7 @@ from sklearn.svm import OneClassSVM
 filepath = "../../A7/pokus_lobsteru.csv"
 data = pd.read_csv(filepath)
 # data = data[["Time", "Ask Price 1", "Bid Price 1", "Imbalance Index", "Frequency of Incoming Messages", "Cancellations Rate"]]
-data = data.head(10000)
+data = data.head(100000)
 
 # Get the indices of the columns
 try:
@@ -28,7 +29,7 @@ data_numpy = data.dropna().to_numpy()
 mid_price = (data_numpy[:, ask_price_idx] + data_numpy[:, bid_price_idx]) / 2
 
 # Initialize and fit the model
-model = OneClassSVM(kernel="rbf")
+model = OneClassSVM(kernel="rbf", gamma="scale")
 model.fit(data_numpy)
 
 # Predict the anomalies in the data
@@ -36,6 +37,9 @@ y_pred = model.predict(data_numpy)
 y_scores = model.score_samples(data_numpy)
 y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
 anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "certainty" it is an anomaly
+# # We expect 1 % of the data to be anomalies
+# thresh = np.percentile(anomaly_proba, 98)
+# anomaly_proba = np.where(anomaly_proba > thresh, anomaly_proba, 0)
 
 # Plot the anomalies
 fig, axes = plt.subplots(2, 2, figsize=(20, 10))
