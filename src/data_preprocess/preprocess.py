@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 # Config
-infile = "merged/20191202-FGBL-4128839.csv"
+infile = "data/merged/20191202-FGBL-4128839.csv"
 outfile = "data/20191202-FGBL-4128839-ob.csv"
 incols = ["PARENT_ID", "ID", "TrdRegTSTimeIn", "TrdRegTSTimePriority", "Side", "Price", "DisplayQty", "op", "Trans", "Prio"]
 outcols = ['i', 'Price', 'DisplayQty', 'Q', 'od', 'do', "Trans", "Prio"]

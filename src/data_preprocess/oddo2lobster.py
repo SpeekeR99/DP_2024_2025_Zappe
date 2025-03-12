@@ -13,7 +13,7 @@ SECURITY_ID = "4128839"
 # SECURITY_ID = sys.argv[3]
 
 INPUT_FILE_PATH = f"data/{DATE}-{INSTRUMENT}-{SECURITY_ID}-ob.csv"
-OUTPUT_FILE_PATH = f"../../A7/process-eobi-data/data/lobster_test.csv"
+OUTPUT_FILE_PATH = f"data/lobster_test.csv"
 
 # Load data from CSV
 data = pd.read_csv(INPUT_FILE_PATH)

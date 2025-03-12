@@ -37,11 +37,11 @@ def parse_lobster(part, fp, levels=30, part_one=False):
 
 
 print("Loading data...")
-with open(f"{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_orderbook.json", "r") as fp:
+with open(f"data/{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_orderbook.json", "r") as fp:
     data = json.load(fp)
 print("Data loaded")
 
-fp = open(f"{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_orderbook.csv", "w")
+fp = open(f"data/{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_orderbook.csv", "w")
 
 for i, part in enumerate(data):
     print(f"Processing part {i + 1}/{len(data)}")

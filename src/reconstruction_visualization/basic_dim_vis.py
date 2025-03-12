@@ -5,7 +5,7 @@ DATE = "20191202"
 MARKET_SEGMENT_ID = "688"
 SECURITY_ID = "4128839"
 
-FILE_PATH = f"{DATE}-{MARKET_SEGMENT_ID}-{SECURITY_ID}-lobster-augmented.csv"
+FILE_PATH = f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_lobster_augmented.csv"
 
 data = pandas.read_csv(FILE_PATH)
 

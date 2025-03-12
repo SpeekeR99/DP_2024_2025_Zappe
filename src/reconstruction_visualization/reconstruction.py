@@ -26,7 +26,7 @@ class Config:
     port = 1234
 
     # Data config
-    path = "../../A7/process-eobi-data/data/"
+    path = "data/"
     df_cols = ["Price", "DisplayQty", "Q", "od", "do", "Trans", "Prio"]
     df_cols_type = {"Price": np.float64, "DisplayQty": np.int64, "Q": np.int64, "od": np.int64, "do": np.int64, "Trans": np.int64, "Prio": str}
     delim = ","
@@ -304,14 +304,13 @@ def imbalance_index_vectorized(asks, bids, alpha=0.5, level=3):
     return (V_bt - V_at) / (V_bt + V_at)
 
 
-def price_graph(instrument, security, date, level_depth=3):
+def price_graph(date, market_segment_id, security, level_depth=3):
     """
     Create price graph
     :return: figure
     """
-    # lobster_fp = f"{Config.path}{date}-{instrument}-{security}-lobster.csv"
+    lobster_fp = f"{Config.path}{date}_{market_segment_id}_{security}_lobster_augmented.csv"
     # lobster_fp = "data/lobster_test.csv"
-    lobster_fp = f"../{date}-{instrument}-{security}-lobster-augmented.csv"
     lobster = Lobster(lobster_fp)
     data = lobster.load_data()
     # ? why is date thrown away ?
@@ -391,6 +390,7 @@ def main():
     # Instrument, security, date
     instrument = "FGBL"
     security = "4128839"
+    market_segment_id = "688"
     date = "20191202"
 
     # Set default OB for dash
@@ -398,7 +398,7 @@ def main():
     api_OB = None
 
     # Price graph
-    timestamps, ask_prices, bid_prices, lobster_data = price_graph(instrument, security, date, level_depth=5)
+    timestamps, ask_prices, bid_prices, lobster_data = price_graph(date, market_segment_id, security, level_depth=5)
 
     level_depth = 30
     ask_columns = [f'Ask Volume {i}' for i in range(1, level_depth+1)]
