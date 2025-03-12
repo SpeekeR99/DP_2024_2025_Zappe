@@ -24,7 +24,7 @@ print(data.head())
 max_index = data["do"].max()
 lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
-# timestamps = []
+timestamps = []
 
 print(len(lobster_buy))
 print(len(lobster_sell))
@@ -35,8 +35,8 @@ tic = time.time()
 levels = 30
 # Iterate over each row
 for i, row in data.iterrows():
-    # timestamp = int(row["Prio"])
-    # timestamps.append(timestamp)
+    timestamp = int(row["Prio"])
+    timestamps.append(timestamp)
 
     qty = int(row["DisplayQty"])
     if qty == 0:  # Skip zero quantity orders
@@ -72,8 +72,8 @@ for i in range(max_index):
     lobster_buy[i] = sorted(lobster_buy[i])
     lobster_sell[i] = sorted(lobster_sell[i])
 
-# timestamps = sorted(timestamps)
-# print(len(timestamps))
+timestamps = sorted(timestamps)
+print(len(timestamps))
 
 toc = time.time()
 print("Elapsed time:", toc - tic)
@@ -93,8 +93,8 @@ with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
     writer.writerow(lobster_header.split(","))  # Write header
 
     for i in range(1, max_index):
-        row = [i]
-        # row = [timestamps[i - 1]]  # Start with index
+        # row = [i]
+        row = [timestamps[i - 1]]  # Start with index
         for level in range(levels):
             # Add sell levels
             if level < len(lobster_sell[i]):

@@ -7,7 +7,7 @@ from sklearn.ensemble import IsolationForest
 filepath = "../../A7/pokus_lobsteru.csv"
 data = pd.read_csv(filepath)
 # data = data[["Time", "Ask Price 1", "Bid Price 1", "Imbalance Index", "Frequency of Incoming Messages", "Cancellations Rate"]]
-data = data.head(10000)
+data = data.head(100000)
 
 # Get the indices of the columns
 try:

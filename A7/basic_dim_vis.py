@@ -12,7 +12,7 @@ data = pandas.read_csv(FILE_PATH)
 # Visualize all the columns in the dataset with "Time" on the x-axis
 for column in data.columns:
     if column == "Time" or "Ask Price" in column or "Bid Price" in column or "Ask Volume" in column or "Bid Volume" in column:
-        if column != "Ask Price 1" and column != "Bid Price 1":
+        if column != "Ask Price 1" and column != "Bid Price 1" and column != "Ask Volume 1" and column != "Bid Volume 1":
             continue
     plt.figure(figsize=(20, 10))
     plt.title(column)
