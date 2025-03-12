@@ -190,7 +190,8 @@ print("Creating orderbook...")
 lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
 timestamps = list(dict(sorted(instructions.items())).keys())
-cancellations = {}
+cancellations_buy = {}
+cancellations_sell = {}
 trades_buy = {}
 trades_sell = {}
 levels = 100
@@ -206,8 +207,10 @@ for i, (timestamp, array) in enumerate(instructions.items()):
         lobster_buy[i] = lobster_buy[i - 1].copy()
         lobster_sell[i] = lobster_sell[i - 1].copy()
 
-    if timestamp not in cancellations:
-        cancellations[timestamp] = 0
+    if timestamp not in cancellations_buy:
+        cancellations_buy[timestamp] = 0
+    if timestamp not in cancellations_sell:
+        cancellations_sell[timestamp] = 0
     if timestamp not in trades_buy:
         trades_buy[timestamp] = 0
     if timestamp not in trades_sell:
@@ -223,7 +226,10 @@ for i, (timestamp, array) in enumerate(instructions.items()):
                 lobster = lobster_sell
 
             if value[0] == "DELETE":
-                cancellations[timestamp] += 1
+                if side == 1:
+                    cancellations_buy[timestamp] += 1
+                else:
+                    cancellations_sell[timestamp] += 1
             if value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
                 if side == 1:
                     trades_buy[timestamp] += 1
@@ -305,7 +311,7 @@ levels = 30
 lobster_header = "Time,"
 for i in range(levels):
     lobster_header += f"Ask Price {i + 1},Ask Volume {i + 1},Bid Price {i + 1},Bid Volume {i + 1},"
-lobster_header += "Cancellations,Trades Buy,Trades Sell"  # This must be saved for the future calculation of Cancellations Rate
+lobster_header += "Cancellations Buy,Cancellations Sell,Trades Buy,Trades Sell"  # This must be saved for the future calculation of Cancellations Rate
 lobster_header = lobster_header.split(",")
 
 print("Exporting to CSV...")
@@ -333,7 +339,8 @@ with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
             else:
                 row.extend(["", ""])  # Empty values
 
-        row.extend([cancellations[timestamps[i]]])  # Add cancellations
+        row.extend([cancellations_buy[timestamps[i]]])  # Add cancellations buy
+        row.extend([cancellations_sell[timestamps[i]]])  # Add cancellations sell
         row.extend([trades_buy[timestamps[i]]])  # Add trades buy
         row.extend([trades_sell[timestamps[i]]])  # Add trades sell
 
