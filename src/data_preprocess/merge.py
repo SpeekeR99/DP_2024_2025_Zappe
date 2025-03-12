@@ -71,7 +71,7 @@ def main():
     # Config
     # -----------------------------------
     delim = ','
-    path = "../../data/raw/"  # path to data files
+    path = "data/raw/"  # path to data files
     output_format_params = ["i", "PARENT_ID", "ID", "TrdRegTSTimeIn", "TrdRegTSTimePriority", "Side", "Price", "DisplayQty", "op", "Trans", "Prio"]
     qty_rounder = 10000
 
@@ -92,7 +92,7 @@ def main():
     security = temp_name[1].split("_")[2]
     base_date = datetime(int(date[:4]), int(date[4:6]), int(date[6:]))
 
-    outfile = "merged/"+date+"-"+instrument+"-"+security+".csv"
+    outfile = "data/merged/"+date+"-"+instrument+"-"+security+".csv"
     # -----------------------------------
 
     # Merge sorted data files

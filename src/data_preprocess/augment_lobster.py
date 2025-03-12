@@ -20,8 +20,8 @@ if len(sys.argv) == 5:
     MARKET_SEGMENT_ID = sys.argv[3]
     SECURITY_ID = sys.argv[4]
 
-INPUT_FILE_PATH = f"{DATE}-{MARKET_SEGMENT_ID}-{SECURITY_ID}-lobster.csv"
-OUTPUT_FILE_PATH = f"{DATE}-{MARKET_SEGMENT_ID}-{SECURITY_ID}-lobster-augmented.csv"
+INPUT_FILE_PATH = f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_lobster.csv"
+OUTPUT_FILE_PATH = f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_lobster_augmented.csv"
 
 # Add imbalance index, frequency of incoming messages, cancellations rate, etc. to the CSV
 print("Augmenting CSV with extra features")

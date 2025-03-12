@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
 
 # Load the data
-# filepath = "../data/lobster_best_prices_only.csv"
-filepath = "../../A7/pokus_lobsteru.csv"
+DATE = "20191202"
+MARKET_SEGMENT_ID = "688"
+SECURITY_ID = "4128839"
+filepath = f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_lobster_augmented.csv"
 data = pd.read_csv(filepath)
 # data = data[["Time", "Ask Price 1", "Bid Price 1", "Imbalance Index", "Frequency of Incoming Messages", "Cancellations Rate"]]
 data = data.head(100000)
