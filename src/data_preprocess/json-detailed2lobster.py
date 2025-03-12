@@ -191,6 +191,8 @@ lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
 timestamps = list(dict(sorted(instructions.items())).keys())
 cancellations = {}
+trades_buy = {}
+trades_sell = {}
 levels = 100
 
 tic = time.time()
@@ -206,6 +208,10 @@ for i, (timestamp, array) in enumerate(instructions.items()):
 
     if timestamp not in cancellations:
         cancellations[timestamp] = 0
+    if timestamp not in trades_buy:
+        trades_buy[timestamp] = 0
+    if timestamp not in trades_sell:
+        trades_sell[timestamp] = 0
 
     for j, value in enumerate(array):
         if value[0] == "DELETE" or value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
@@ -218,6 +224,11 @@ for i, (timestamp, array) in enumerate(instructions.items()):
 
             if value[0] == "DELETE":
                 cancellations[timestamp] += 1
+            if value[0] == "FULL_ORDER_EXECUTION" or value[0] == "PARTIAL_ORDER_EXECUTION":
+                if side == 1:
+                    trades_buy[timestamp] += 1
+                else:
+                    trades_sell[timestamp] += 1
 
             # Find the order in the heap
             found = False
@@ -294,7 +305,7 @@ levels = 30
 lobster_header = "Time,"
 for i in range(levels):
     lobster_header += f"Ask Price {i + 1},Ask Volume {i + 1},Bid Price {i + 1},Bid Volume {i + 1},"
-lobster_header += "Cancellations"  # This must be saved for the future calculation of Cancellations Rate
+lobster_header += "Cancellations,Trades Buy,Trades Sell"  # This must be saved for the future calculation of Cancellations Rate
 lobster_header = lobster_header.split(",")
 
 print("Exporting to CSV...")
@@ -323,6 +334,8 @@ with open(OUTPUT_FILE_PATH, "w", newline="") as fp:
                 row.extend(["", ""])  # Empty values
 
         row.extend([cancellations[timestamps[i]]])  # Add cancellations
+        row.extend([trades_buy[timestamps[i]]])  # Add trades buy
+        row.extend([trades_sell[timestamps[i]]])  # Add trades sell
 
         writer.writerow(row)  # Write row to CSV
 
