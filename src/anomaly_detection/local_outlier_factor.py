@@ -1,7 +1,9 @@
 import os
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.model_selection import KFold
 
 # Load the data
 DATE = "20191202"
@@ -39,17 +41,24 @@ trades_oppose_quotes_idx = data.columns.get_loc("Trades Oppose Quotes")
 cancels_oppose_trades_idx = data.columns.get_loc("Cancels Oppose Trades")
 indcs = [ask_price_idx, ask_volume_idx, bid_price_idx, bid_volume_idx, imbalance_idx, frequency_idx, cancellation_rate_idx, high_quoting_activity_idx, unbalanced_quoting_idx, low_execution_probability_idx, trades_oppose_quotes_idx, cancels_oppose_trades_idx]
 
-# Transform the data to numpy
+# Fill NaN values with the mean of the column
+# data.fillna(data.mean(), inplace=True)
 # data_numpy = data.to_numpy()
 data_numpy = data.dropna().to_numpy()
 
+# Prepare the data for KFold
+kf = KFold(n_splits=5)
+y_pred = np.zeros_like(data_numpy[:, 0])
+y_scores = np.zeros_like(data_numpy[:, 0])
+
 # Initialize and fit the model
 model = LocalOutlierFactor(n_neighbors=32, contamination=0.01)
-# model.fit(data_numpy)
 
-# Predict the anomalies in the data
-y_pred = model.fit_predict(data_numpy)
-y_scores = model.negative_outlier_factor_
+for train_index, test_index in kf.split(data_numpy):
+    # Fit the model and predict the anomalies in the data
+    y_pred[test_index] = model.fit_predict(data_numpy[test_index])
+    y_scores[test_index] = model.negative_outlier_factor_
+
 y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
 anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "certainty" it is an anomaly
 

@@ -1,7 +1,9 @@
 import os
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import KFold
 
 # Load the data
 DATE = "20191202"
@@ -21,7 +23,7 @@ except KeyError as e:
     exit(1)
 
 # Take smaller subset of the data (for local computer speed purposes)
-data = data.head(100000)
+# data = data.head(100000)
 
 # Get the indices of the columns
 time_idx = data.columns.get_loc("Time")
@@ -42,15 +44,22 @@ indcs = [ask_price_idx, ask_volume_idx, bid_price_idx, bid_volume_idx, imbalance
 # Transform the data to numpy
 data_numpy = data.to_numpy()
 
+# Prepare the data for KFold
+kf = KFold(n_splits=5)
+y_pred = np.zeros_like(data_numpy[:, 0])
+y_scores = np.zeros_like(data_numpy[:, 0])
+
 # Initialize and fit the model
 model = IsolationForest(contamination=0.01)
 # model = IsolationForest(contamination=0.01, n_estimators=1000, max_samples=1.0, max_features=1.0)
-model.fit(data_numpy)
 
-# Predict the anomalies in the data
-y_pred = model.predict(data_numpy)
-y_scores = model.score_samples(data_numpy)
-# y_scores_abs = np.abs(y_scores)
+for train_index, test_index in kf.split(data_numpy):
+    # Fit the model
+    model.fit(data_numpy[train_index])
+    # Predict the anomalies in the data
+    y_pred[test_index] = model.predict(data_numpy[test_index])
+    y_scores[test_index] = model.decision_function(data_numpy[test_index])
+
 y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
 anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "certainty" it is an anomaly
 
