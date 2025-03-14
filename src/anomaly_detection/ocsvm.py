@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.svm import OneClassSVM
+from sklearn.model_selection import KFold
 
 # Load the data
 DATE = "20191202"
@@ -20,6 +21,7 @@ try:
 except KeyError as e:
     print(f"The input file does not contain the necessary column {e}.")
     exit(1)
+
 # Take smaller subset of the data (for local computer speed purposes)
 data = data.head(100000)
 
@@ -43,20 +45,27 @@ indcs = [ask_price_idx, ask_volume_idx, bid_price_idx, bid_volume_idx, imbalance
 # data.fillna(data.mean(), inplace=True)
 # data_numpy = data.to_numpy()
 data_numpy = data.dropna().to_numpy()
-mid_price = (data_numpy[:, ask_price_idx] + data_numpy[:, bid_price_idx]) / 2
+
+# Prepare the data for KFold
+kf = KFold(n_splits=5)
+y_pred = np.zeros_like(data_numpy[:, 0])
+y_scores = np.zeros_like(data_numpy[:, 0])
 
 # Initialize and fit the model
 model = OneClassSVM(kernel="rbf", gamma="scale")
-model.fit(data_numpy)
 
-# Predict the anomalies in the data
-y_pred = model.predict(data_numpy)
-y_scores = model.score_samples(data_numpy)
+for train_index, test_index in kf.split(data_numpy):
+    # Fit the model
+    model.fit(data_numpy[train_index])
+    # Predict the anomalies in the data
+    y_pred[test_index] = model.predict(data_numpy[test_index])
+    y_scores[test_index] = model.score_samples(data_numpy[test_index])
+
 y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
 anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "certainty" it is an anomaly
-# # We expect 1 % of the data to be anomalies
-# thresh = np.percentile(anomaly_proba, 98)
-# anomaly_proba = np.where(anomaly_proba > thresh, anomaly_proba, 0)
+# We expect 1-2 % of the data to be anomalies
+thresh = np.percentile(anomaly_proba, 98)
+y_pred[anomaly_proba < thresh] = 1
 
 # Plot the anomalies
 for index in indcs:
