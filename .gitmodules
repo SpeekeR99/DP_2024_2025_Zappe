@@ -1,0 +1,3 @@
+[submodule "lib/eval"]
+	path = lib/eval
+	url = https://github.com/ngoix/EMMV_benchmarks.git
