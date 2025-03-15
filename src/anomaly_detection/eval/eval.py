@@ -35,7 +35,8 @@ def evaluate(model, data_train, data_test, averaging=50, n_generated=100000, alp
         # Compute the volume of the support
         lim_inf = X_test.min(axis=0)
         lim_sup = X_test.max(axis=0)
-        volume_support = (lim_sup - lim_inf).prod()
+        epsilon = 1e-6  # To avoid division by zero
+        volume_support = (lim_sup - lim_inf + epsilon).prod()
 
         # Compute the time and alpha axis
         t = np.linspace(0, 100 / volume_support, n_generated)
