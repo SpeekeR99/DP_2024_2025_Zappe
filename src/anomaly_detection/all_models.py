@@ -6,8 +6,8 @@ from sklearn.ensemble import IsolationForest
 from sklearn.svm import OneClassSVM
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.model_selection import KFold
-from eval.eval import evaluate
-from eval.eval import ocsvm_max_train
+from src.anomaly_detection.eval.eval import evaluate
+from src.anomaly_detection.eval.eval import ocsvm_max_train
 
 
 def load_data(date="20191202", market_segment_id="688", security_id="4128839", relevant_features=None):
