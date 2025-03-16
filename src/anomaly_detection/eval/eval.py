@@ -3,6 +3,9 @@ from sklearn.utils import shuffle
 # https://github.com/ngoix/EMMV_benchmarks.git
 from lib.eval.em import em, mv
 
+ocsvm_max_train = 10000
+
+
 def evaluate(model, data_train, data_test, averaging=50, n_generated=100000, alpha_min=0.9, alpha_max=0.999, t_max=0.9):
     """
     Evaluate the model using the EM and MV scores
@@ -35,7 +38,7 @@ def evaluate(model, data_train, data_test, averaging=50, n_generated=100000, alp
         # Compute the volume of the support
         lim_inf = X_test.min(axis=0)
         lim_sup = X_test.max(axis=0)
-        epsilon = 1e-6  # To avoid division by zero
+        epsilon = 1e-4  # To avoid division by zero
         volume_support = (lim_sup - lim_inf + epsilon).prod()
 
         # Compute the time and alpha axis
@@ -44,7 +47,10 @@ def evaluate(model, data_train, data_test, averaging=50, n_generated=100000, alp
         unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, max_features))  # Generate uniform samples
 
         # Fit the model
-        model.fit(X_train)
+        if model.__class__.__name__ == "OneClassSVM":
+            model.fit(X_train[:min(ocsvm_max_train, len(X_train) - 1)])
+        else:
+            model.fit(X_train)
 
         # Compute the scores
         s_X = model.decision_function(X_test)
