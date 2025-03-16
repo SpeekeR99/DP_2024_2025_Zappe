@@ -7,6 +7,7 @@ from sklearn.svm import OneClassSVM
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.model_selection import KFold
 from eval.eval import evaluate
+from eval.eval import ocsvm_max_train
 
 
 def load_data(date="20191202", market_segment_id="688", security_id="4128839", relevant_features=None):
@@ -70,10 +71,14 @@ def train_model(model, data, kf=5, eval=True):
         iter += 1
 
         # Fit the model
-        model.fit(data[train_index])
+        if model.__class__.__name__ == "OneClassSVM":
+            model.fit(data[train_index][:min(ocsvm_max_train, len(data[train_index]) - 1)])
+        else:
+            model.fit(data[train_index])
+
         # Predict the anomalies in the data
         y_pred[test_index] = model.predict(data[test_index])
-        y_scores[test_index] = model.decision_function(data[test_index])
+        y_scores[test_index] = model.score_samples(data[test_index])
 
         if eval:
             # Evaluate the model
