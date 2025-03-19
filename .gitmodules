@@ -1,3 +1,6 @@
 [submodule "lib/eval"]
 	path = lib/eval
 	url = https://github.com/ngoix/EMMV_benchmarks.git
+[submodule "lib/diffi"]
+	path = lib/diffi
+	url = https://github.com/britojr/diffi.git
