@@ -2,7 +2,8 @@ from sklearn.svm import OneClassSVM
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_model
-from src.anomaly_detection.visuals import plot_anomallies, plot_eval_res
+from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
+from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
 
 
 def main():
@@ -10,24 +11,6 @@ def main():
     Main function
     """
     # Load the data
-    DATE = "20191202"
-    MARKET_SEGMENT_ID = "688"
-    SECURITY_ID = "4128839"
-    WANTED_FEATURES = [
-        "Time",
-        "Ask Price 1",
-        "Ask Volume 1",
-        "Bid Price 1",
-        "Bid Volume 1",
-        "Imbalance Index",
-        "Frequency of Incoming Messages",
-        "Cancellations Rate",
-        "High Quoting Activity",
-        "Unbalanced Quoting",
-        "Low Execution Probability",
-        "Trades Oppose Quotes",
-        "Cancels Oppose Trades"
-    ]
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
     data = data.head(10000)
@@ -55,7 +38,7 @@ def main():
     plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
 
     # Plot the anomalies
-    plot_anomallies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "One-Class SVM", "OCSVM", data_numpy, time_idx, indcs, y_pred_ocsvm, anomaly_proba_ocsvm, WANTED_FEATURES[1:])
+    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "One-Class SVM", "OCSVM", data_numpy, time_idx, indcs, y_pred_ocsvm, anomaly_proba_ocsvm, WANTED_FEATURES[1:])
 
 
 if __name__ == "__main__":
