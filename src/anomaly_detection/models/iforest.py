@@ -23,13 +23,14 @@ def main():
     # model = IsolationForest(contamination=0.01, n_estimators=1000, max_samples=1.0, max_features=1.0)
 
     # Train the models
-    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t, axis_alpha, amax = train_model(model_if, data_numpy, kf=5, eval=True)
+    kfolds = 5
+    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t, axis_alpha, amax = train_model(model_if, data_numpy, kfolds=kfolds, eval=True)
 
     # Prepare data for plots
     time_idx = data.columns.get_loc("Time")
     indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
-    model_names = ["Isolation Forest", "One-Class SVM", "Local Outlier Factor"]
-    short_model_names = ["IF", "OCSVM", "LOF"]
+    model_names = ["Isolation Forest"]
+    short_model_names = ["IF"]
     em_vals = [em_val_if]
     mv_vals = [mv_val_if]
     em_curves = [em_curve_if]

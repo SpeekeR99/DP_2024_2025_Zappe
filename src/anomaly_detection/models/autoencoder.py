@@ -3,7 +3,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from src.anomaly_detection.dataloader import load_data
-# from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
+from src.anomaly_detection.training import train_torch_model
+from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
 
 
@@ -101,18 +102,43 @@ def main():
     # Load the data
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
-    data = data.head(100000)
+    data = data.head(10000)
 
-    # Transform data to PyTorch tensors and drop NaN values
-    data_tensor = torch.tensor(data.dropna().to_numpy(), dtype=torch.float32)
+    # Transform the data to numpy and drop NaN values
+    data_numpy = data.dropna().to_numpy()
+
+    # Transform data to PyTorch tensors and normalize the data
+    data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the data
-    data_loader = DataLoader(data_tensor, batch_size=32, shuffle=True)
+    batch_size = 32
+    data_loader = DataLoader(data_tensor, batch_size=batch_size, shuffle=True)
 
     # Initialize the models
-    ffnn_model = FFNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=4).to(device)
+    latent_dimensions = 4
+    ffnn_model = FFNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=latent_dimensions).to(device)
 
     # Train the models
-    ffnn_model.fit(data_loader, num_epochs=10, lr=1e-5)
+    num_epochs = 10
+    lr = 1e-5
+    kfolds = 5
+
+    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(ffnn_model, data_loader, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
+
+    # Prepare data for plots
+    time_idx = data.columns.get_loc("Time")
+    indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
+    model_names = ["FFNN Autoencoder"]
+    short_model_names = ["FFNNAE"]
+    em_vals = [em_val]
+    mv_vals = [mv_val]
+    em_curves = [em_curve]
+    mv_curves = [mv_curve]
+
+    # Plot the evaluation results
+    plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
+
+    # Plot the anomalies
+    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "FFNN Autoencoder", "FFNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
 
 
 if __name__ == "__main__":

@@ -22,13 +22,14 @@ def main():
     model_lof = LocalOutlierFactor(n_neighbors=32, contamination=0.01, novelty=True)
 
     # Train the models
-    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t, axis_alpha, amax = train_model(model_lof, data_numpy, kf=5, eval=True)
+    kfolds = 5
+    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t, axis_alpha, amax = train_model(model_lof, data_numpy, kfolds=kfolds, eval=True)
 
     # Prepare data for plots
     time_idx = data.columns.get_loc("Time")
     indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
-    model_names = ["Isolation Forest", "One-Class SVM", "Local Outlier Factor"]
-    short_model_names = ["IF", "OCSVM", "LOF"]
+    model_names = ["Local Outlier Factor"]
+    short_model_names = ["LOF"]
     em_vals = [em_val_lof]
     mv_vals = [mv_val_lof]
     em_curves = [em_curve_lof]
