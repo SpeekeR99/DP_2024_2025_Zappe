@@ -23,6 +23,18 @@ class BaseAutoencoder(nn.Module):
         Constructor
         """
         super(BaseAutoencoder, self).__init__()
+        self.encoder = None
+        self.decoder = None
+
+    def forward(self, x):
+        """
+        Forward pass
+        :param x: Input data
+        :return: Output data
+        """
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
 
     def fit(self, train_loader, num_epochs=10, lr=1e-3):
         """
@@ -83,16 +95,6 @@ class FFNNAutoencoder(BaseAutoencoder):
             nn.Linear((input_size + latent_space_size) // 2, input_size),
             nn.Sigmoid()
         )
-
-    def forward(self, x):
-        """
-        Forward pass
-        :param x: Input data
-        :return: Output data
-        """
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
 
 
 def main():
