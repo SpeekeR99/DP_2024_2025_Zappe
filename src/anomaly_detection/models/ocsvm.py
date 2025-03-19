@@ -22,13 +22,14 @@ def main():
     model_ocsvm = OneClassSVM(kernel="rbf", gamma="scale")
 
     # Train the models
-    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t, axis_alpha, amax = train_model(model_ocsvm, data_numpy, kf=5, eval=True)
+    kfolds = 5
+    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t, axis_alpha, amax = train_model(model_ocsvm, data_numpy, kfolds=kfolds, eval=True)
 
     # Prepare data for plots
     time_idx = data.columns.get_loc("Time")
     indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
-    model_names = ["Isolation Forest", "One-Class SVM", "Local Outlier Factor"]
-    short_model_names = ["IF", "OCSVM", "LOF"]
+    model_names = ["One-Class SVM"]
+    short_model_names = ["OCSVM"]
     em_vals = [em_val_ocsvm]
     mv_vals = [mv_val_ocsvm]
     em_curves = [em_curve_ocsvm]
