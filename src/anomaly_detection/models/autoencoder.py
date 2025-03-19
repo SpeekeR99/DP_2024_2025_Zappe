@@ -100,6 +100,7 @@ def main():
     Main function
     """
     # Load the data
+    print("Loading the data...")
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
     data = data.head(10000)
@@ -113,11 +114,13 @@ def main():
     batch_size = 32
     data_loader = DataLoader(data_tensor, batch_size=batch_size, shuffle=True)
 
-    # Initialize the models
+    # Initialize the model
+    print("Initializing the model...")
     latent_dimensions = 4
     ffnn_model = FFNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=latent_dimensions).to(device)
 
-    # Train the models
+    # Train the model
+    print("Training the model...")
     num_epochs = 10
     lr = 1e-5
     kfolds = 5
@@ -125,6 +128,7 @@ def main():
     y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(ffnn_model, data_loader, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
 
     # Prepare data for plots
+    print("Plotting the results...")
     time_idx = data.columns.get_loc("Time")
     indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
     model_names = ["FFNN Autoencoder"]
