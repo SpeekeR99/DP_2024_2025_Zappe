@@ -47,7 +47,7 @@ def train_model(model, data, kfolds=5, eval=True):
         if eval:
             # Evaluate the model
             print("Evaluating the model...")
-            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate(model, data[train_index], data[test_index])
+            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate(model, data[train_index], data[test_index], averaging=5)
             em_vals.append(em_val)
             mv_vals.append(mv_val)
             em_curves.append(em_curve)

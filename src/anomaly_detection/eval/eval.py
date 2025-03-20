@@ -31,7 +31,7 @@ def evaluate(model, data_train, data_test, averaging=50, n_generated=100000, alp
 
     # Loop over the averaging
     for iter_avg in range(averaging):
-        print(f"Iteration of averaging {iter_avg} / {averaging}")
+        print(f"Iteration of averaging {iter_avg + 1} / {averaging}")
 
         # Randomly select the features
         features = shuffle(np.arange(max_features))[:max_features]
@@ -97,6 +97,7 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
     :return: EM and MV scores, EM and MV curves, time and alpha axis, maximum
     """
     max_features = train_loader.dataset.dataset.data.shape[1]  # Number of features
+    n_generated_orig = n_generated
     if len(train_loader.dataset.dataset.data.shape) == 3:
         n_generated //= train_loader.dataset.dataset.data.shape[2]
 
@@ -109,7 +110,7 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
 
     # Loop over the averaging
     for iter_avg in range(averaging):
-        print(f"Iteration of averaging {iter_avg} / {averaging}")
+        print(f"Iteration of averaging {iter_avg + 1} / {averaging}")
 
         # Randomly select the features
         features = shuffle(np.arange(max_features))[:max_features]
@@ -168,5 +169,10 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
     mv_val /= averaging
     em_curve /= averaging
     mv_curve /= averaging
+
+    # Interpolate EM curve to the length of the original n_generated
+    if n_generated_orig != n_generated:
+        t_orig = np.linspace(0, 100 / volume_support, n_generated_orig)
+        em_curve = np.interp(t_orig, t, em_curve)
 
     return em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax
