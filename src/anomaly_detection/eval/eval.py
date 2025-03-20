@@ -30,7 +30,9 @@ def evaluate(model, data_train, data_test, averaging=50, n_generated=100000, alp
     amax = -1
 
     # Loop over the averaging
-    for _ in range(averaging):
+    for iter_avg in range(averaging):
+        print(f"Iteration of averaging {iter_avg} / {averaging}")
+
         # Randomly select the features
         features = shuffle(np.arange(max_features))[:max_features]
         X_train = data_train[:, features]
@@ -95,6 +97,8 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
     :return: EM and MV scores, EM and MV curves, time and alpha axis, maximum
     """
     max_features = train_loader.dataset.dataset.data.shape[1]  # Number of features
+    if len(train_loader.dataset.dataset.data.shape) == 3:
+        n_generated //= train_loader.dataset.dataset.data.shape[2]
 
     # Initialize EM and MV accumulators
     em_val, mv_val = 0, 0
@@ -104,22 +108,36 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
     amax = -1
 
     # Loop over the averaging
-    for _ in range(averaging):
+    for iter_avg in range(averaging):
+        print(f"Iteration of averaging {iter_avg} / {averaging}")
+
         # Randomly select the features
         features = shuffle(np.arange(max_features))[:max_features]
         X_train = train_loader.dataset.dataset.data[:, features]
         X_test = test_loader.dataset.dataset.data[:, features]
 
         # Compute the volume of the support
-        lim_inf = X_test.min(axis=0).values
-        lim_sup = X_test.max(axis=0).values
+        # The below code works for FFNN, but CNN/Transformer needs sequences
+        # So data is not (batch_size, max_features) but (batch_size, max_features, sequence_length)
+        if len(X_train.shape) == 2:
+            lim_inf = X_test.min(axis=0).values
+            lim_sup = X_test.max(axis=0).values
+        else:
+            lim_inf = torch.amin(X_test, dim=(0, 2))
+            lim_sup = torch.amax(X_test, dim=(0, 2))
         epsilon = 1e-4  # To avoid division by zero
         volume_support = (lim_sup - lim_inf + epsilon).prod().numpy()
 
         # Compute the time and alpha axis
         t = np.linspace(0, 100 / volume_support, n_generated)
         axis_alpha = np.linspace(alpha_min, alpha_max, len(mv_curve))
-        unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, max_features))  # Generate uniform samples
+        # Generate uniform samples
+        if len(X_train.shape) == 2:
+            unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, max_features))
+        else:  # X_trian.shape[2] == seq_len
+            lim_inf_expanded = np.repeat(lim_inf[:, np.newaxis], X_train.shape[2], axis=1)
+            lim_sup_expanded = np.repeat(lim_sup[:, np.newaxis], X_train.shape[2], axis=1)
+            unif = np.random.uniform(lim_inf_expanded, lim_sup_expanded, size=(n_generated, max_features, X_train.shape[2]))
         unif = torch.tensor(unif, dtype=torch.float32)
 
         # Fit the model
@@ -128,6 +146,9 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
         # Compute the scores
         s_X = model.decision_function(X_test)
         s_unif = model.decision_function(unif)
+        if len(s_X.shape) == 2:
+            s_X = s_X.mean(axis=1)
+            s_unif = s_unif.mean(axis=1)
 
         # Compute the EM
         em_val_new, em_curve_new, amax_new = em(t, t_max, volume_support, s_unif, s_X, n_generated)
