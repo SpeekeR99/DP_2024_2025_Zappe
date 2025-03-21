@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -78,6 +79,9 @@ class BaseAutoencoder(nn.Module):
 
 
 class FFNNAutoencoder(BaseAutoencoder):
+    """
+    Feedforward Neural Network Autoencoder
+    """
     def __init__(self, input_size, latent_space_size):
         """
         Constructor
@@ -99,6 +103,9 @@ class FFNNAutoencoder(BaseAutoencoder):
 
 
 class CNNAutoencoder(BaseAutoencoder):
+    """
+    Convolutional Neural Network Autoencoder
+    """
     def __init__(self, input_size, latent_space_size):
         """
         Constructor
@@ -136,7 +143,94 @@ class CNNAutoencoder(BaseAutoencoder):
         return error.cpu().numpy()  # Convert to NumPy for sklearn-style usage
 
 
-def create_sequences(data, seq_len=300):
+class PositionalEncoding(nn.Module):
+    """
+    Since Transformers lack inherent positional information, we'll use sinusoidal positional encoding
+    """
+    def __init__(self, d_model, max_len=5000):
+        """
+        Constructor
+        :param d_model: Dimensionality of the model
+        :param max_len: Maximum length of the sequence
+        """
+        super(PositionalEncoding, self).__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.pe = pe.unsqueeze(0)
+
+    def forward(self, x):
+        """
+        Forward pass
+        :param x: Input data
+        :return: Output data
+        """
+        return x + self.pe[:, :x.size(1)]
+
+
+class TransformerAutoencoder(BaseAutoencoder):
+    """
+    Transformer Autoencoder
+    """
+    def __init__(self, input_size, seq_len=300, d_model=64, num_layers=4, num_heads=8):
+        """
+        Constructor
+        :param input_size: Input size
+        :param seq_len: Sequence length
+        :param d_model: Model dimensionality
+        :param num_layers: Number of layers
+        :param num_heads: Number of heads
+        """
+        super(TransformerAutoencoder, self).__init__()
+        self.d_model = d_model
+
+        # Input Embedding
+        self.embedding = nn.Linear(input_size, d_model)
+        self.pos_encoder = PositionalEncoding(d_model, max_len=seq_len)
+
+        # Transformer Encoder & Decoder
+        self.encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, batch_first=True)
+        self.encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
+
+        self.decoder_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=num_heads, batch_first=True)
+        self.decoder = nn.TransformerDecoder(self.decoder_layer, num_layers=num_layers)
+
+        self.output_layer = nn.Linear(d_model, input_size)
+
+    def forward(self, x):
+        """
+        Forward pass
+        :param x: Input data
+        :return: Output data
+        """
+        # x shape: (batch_size, features, seq_len)
+        x = self.embedding(x)
+        x = self.pos_encoder(x)
+
+        # Encoder
+        memory = self.encoder(x)
+
+        # Decoder
+        output = self.decoder(x, memory)
+        output = self.output_layer(output)
+        return output
+
+    def decision_function(self, x):
+        """
+        Returns the reconstruction error for input x
+        This function exists mostly just because of the evaluation, which is created for sklearn-style models
+        :param x: Input data
+        :return: Reconstruction error
+        """
+        with torch.no_grad():
+            x_reconstructed = self.forward(x)
+            error = torch.mean((x - x_reconstructed) ** 2, dim=1)
+        return error.cpu().numpy()
+
+
+def create_sequences(data, seq_len=300, transpose=False):
     """
     Create sequences from the data
     :param data: Data tensor
@@ -146,7 +240,9 @@ def create_sequences(data, seq_len=300):
     # Create the sliding windows (output shape: [num_samples, seq_len, num_features])
     windows = torch.stack([data[i:i + seq_len] for i in range(len(data) - seq_len + 1)])
     # Transpose to shape [num_samples, num_features, seq_len]
-    return windows.permute(0, 2, 1)
+    if transpose:
+        windows = windows.permute(0, 2, 1)
+    return windows
 
 
 def undo_sequences(data, seq_len=300):
@@ -212,13 +308,14 @@ def main():
     # Initialize the model
     print("Initializing the model...")
     latent_dimensions = 4
+    seq_len = 300
     # model = FFNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=latent_dimensions).to(device)
-    model = CNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=latent_dimensions).to(device)
+    # model = CNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=latent_dimensions).to(device)
+    model = TransformerAutoencoder(input_size=data_tensor.shape[1], seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
 
     # Based on model, augment with sequences (or not)
-    seq_len = 300
-    if isinstance(model, CNNAutoencoder):
-        data_tensor = create_sequences(data_tensor, seq_len=seq_len)
+    if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
+        data_tensor = create_sequences(data_tensor, seq_len=seq_len, transpose=isinstance(model, CNNAutoencoder))
     batch_size = 32
     data_loader = DataLoader(data_tensor, batch_size=batch_size)
 
@@ -232,7 +329,7 @@ def main():
     y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
 
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
-    if isinstance(model, CNNAutoencoder):
+    if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
         # Remake results from sequences to original shapes (data_len + 1, seq_len) -> (data_len,)
         # Aka take the it as a sliding window, so there's 300 predicitions for each data point (except the first 299 points)
         # 1, 2, 3, ... , 299, 300, 300, 300, ... , 300
@@ -245,9 +342,11 @@ def main():
     time_idx = data.columns.get_loc("Time")
     indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
     # model_names = ["FFNN Autoencoder"]
-    model_names = ["CNN Autoencoder"]
+    # model_names = ["CNN Autoencoder"]
+    model_names = ["Transformer Autoencoder"]
     # short_model_names = ["FFNNAE"]
-    short_model_names = ["CNNAE"]
+    # short_model_names = ["CNNAE"]
+    short_model_names = ["TAE"]
     em_vals = [em_val]
     mv_vals = [mv_val]
     em_curves = [em_curve]
@@ -258,8 +357,8 @@ def main():
 
     # Plot the anomalies
     # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "FFNN Autoencoder", "FFNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
-    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "CNN Autoencoder", "CNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
-
+    # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "CNN Autoencoder", "CNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "Transformer Autoencoder", "TAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
 
 if __name__ == "__main__":
     main()
