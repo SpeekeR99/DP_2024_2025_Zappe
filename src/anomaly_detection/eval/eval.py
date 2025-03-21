@@ -96,10 +96,20 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
     :param t_max: T maximum
     :return: EM and MV scores, EM and MV curves, time and alpha axis, maximum
     """
-    max_features = train_loader.dataset.dataset.data.shape[1]  # Number of features
+    # Funnily enough, the CNN expects the channels to be the second dimension and sequences to be the third
+    # (batch_size, features, seq_len)
+    # However, Transformer expects the sequences to be the second dimension and features to be the third
+    # (batch_size, seq_len, features)
+    # Whenever you see this if-else statement, remember my pain, when I could not find this for a whole day
+    if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
+        max_features = train_loader.dataset.dataset.data.shape[1]  # Number of features
+        seq_len = train_loader.dataset.dataset.data.shape[2]
+    else:  # (batch_size, seq_len, features)
+        max_features = train_loader.dataset.dataset.data.shape[2]
+        seq_len = train_loader.dataset.dataset.data.shape[1]
     n_generated_orig = n_generated
     if len(train_loader.dataset.dataset.data.shape) == 3:
-        n_generated //= train_loader.dataset.dataset.data.shape[2]
+        n_generated //= seq_len
 
     # Initialize EM and MV accumulators
     em_val, mv_val = 0, 0
@@ -114,8 +124,13 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
 
         # Randomly select the features
         features = shuffle(np.arange(max_features))[:max_features]
-        X_train = train_loader.dataset.dataset.data[:, features]
-        X_test = test_loader.dataset.dataset.data[:, features]
+        # If-else statement from hell again
+        if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
+            X_train = train_loader.dataset.dataset.data[:, features]
+            X_test = test_loader.dataset.dataset.data[:, features]
+        else:  # (batch_size, seq_len, features)
+            X_train = train_loader.dataset.dataset.data[:, :, features]
+            X_test = test_loader.dataset.dataset.data[:, :, features]
 
         # Compute the volume of the support
         # The below code works for FFNN, but CNN/Transformer needs sequences
@@ -124,8 +139,13 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
             lim_inf = X_test.min(axis=0).values
             lim_sup = X_test.max(axis=0).values
         else:
-            lim_inf = torch.amin(X_test, dim=(0, 2))
-            lim_sup = torch.amax(X_test, dim=(0, 2))
+            # And again ...
+            if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
+                lim_inf = torch.amin(X_test, dim=(0, 2))
+                lim_sup = torch.amax(X_test, dim=(0, 2))
+            else: # (batch_size, seq_len, features)
+                lim_inf = torch.amin(X_test, dim=(0, 1))
+                lim_sup = torch.amax(X_test, dim=(0, 1))
         epsilon = 1e-4  # To avoid division by zero
         volume_support = (lim_sup - lim_inf + epsilon).prod().numpy()
 
@@ -136,9 +156,13 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
         if len(X_train.shape) == 2:
             unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, max_features))
         else:  # X_trian.shape[2] == seq_len
-            lim_inf_expanded = np.repeat(lim_inf[:, np.newaxis], X_train.shape[2], axis=1)
-            lim_sup_expanded = np.repeat(lim_sup[:, np.newaxis], X_train.shape[2], axis=1)
-            unif = np.random.uniform(lim_inf_expanded, lim_sup_expanded, size=(n_generated, max_features, X_train.shape[2]))
+            lim_inf_expanded = np.repeat(lim_inf[:, np.newaxis], seq_len, axis=1)
+            lim_sup_expanded = np.repeat(lim_sup[:, np.newaxis], seq_len, axis=1)
+            # Even here, yes, again ...
+            if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
+                unif = np.random.uniform(lim_inf_expanded, lim_sup_expanded, size=(n_generated, max_features, seq_len))
+            else:  # (batch_size, seq_len, features)
+                unif = np.random.uniform(lim_inf_expanded.T, lim_sup_expanded.T, size=(n_generated, seq_len, max_features))
         unif = torch.tensor(unif, dtype=torch.float32)
 
         # Fit the model
@@ -150,6 +174,24 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
         if len(s_X.shape) == 2:
             s_X = s_X.mean(axis=1)
             s_unif = s_unif.mean(axis=1)
+        # ----- Possiblity for the future -- batch size approach (might be needed) -------------------------------------
+        # batch_size = 32
+        # # s_X = model.decision_function(X_test)
+        # s_X = np.zeros((len(X_test), max_features))
+        # for i in range(0, len(X_test), batch_size):
+        #     low = i
+        #     high = min(i + batch_size, len(X_test))
+        #     s_X[low:high] = model.score_samples(X_test[low:high])
+        # # s_unif = model.decision_function(unif)
+        # s_unif = np.zeros((n_generated, max_features))
+        # for i in range(0, n_generated, batch_size):
+        #     low = i
+        #     high = min(i + batch_size, n_generated)
+        #     s_unif[low:high] = model.score_samples(unif[low:high])
+        # if len(s_X.shape) == 2:
+        #     s_X = s_X.mean(axis=1)
+        #     s_unif = s_unif.mean(axis=1)
+        # ----- Possiblity for the future -- batch size approach (might be needed) -------------------------------------
 
         # Compute the EM
         em_val_new, em_curve_new, amax_new = em(t, t_max, volume_support, s_unif, s_X, n_generated)
