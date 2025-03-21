@@ -235,11 +235,16 @@ def create_sequences(data, seq_len=300, transpose=False):
     Create sequences from the data
     :param data: Data tensor
     :param seq_len: Sequence length
+    :param transpose: Transpose the data
     :return: Sequences for CNN/Transformer models
     """
     # Create the sliding windows (output shape: [num_samples, seq_len, num_features])
     windows = torch.stack([data[i:i + seq_len] for i in range(len(data) - seq_len + 1)])
-    # Transpose to shape [num_samples, num_features, seq_len]
+    # Funnily enough, the CNN expects the channels to be the second dimension and sequences to be the third
+    # (batch_size, features, seq_len)
+    # However, Transformer expects the sequences to be the second dimension and features to be the third
+    # (batch_size, seq_len, features)
+    # This little thing caused a lot of troubles later on in the code with evaluation
     if transpose:
         windows = windows.permute(0, 2, 1)
     return windows
@@ -296,7 +301,7 @@ def main():
     print("Loading the data...")
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
-    data = data.head(10000)
+    data = data.head(1000)
 
     # Transform the data to numpy and drop NaN values
     data_numpy = data.dropna().to_numpy()
@@ -359,6 +364,7 @@ def main():
     # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "FFNN Autoencoder", "FFNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
     # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "CNN Autoencoder", "CNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
     plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "Transformer Autoencoder", "TAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+
 
 if __name__ == "__main__":
     main()
