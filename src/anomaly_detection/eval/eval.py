@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from sklearn.utils import shuffle
 # https://github.com/ngoix/EMMV_benchmarks.git
 from lib.eval.em import em, mv
@@ -166,7 +167,7 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
         unif = torch.tensor(unif, dtype=torch.float32)
 
         # Fit the model
-        model.fit(X_train, num_epochs=num_epochs, lr=lr)
+        model.fit(DataLoader(X_train, batch_size=train_loader.batch_size), num_epochs=num_epochs, lr=lr)
 
         # Compute the scores
         s_X = model.decision_function(X_test)

@@ -85,8 +85,12 @@ def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval
     """
     # Prepare the data for KFold
     kf = KFold(n_splits=kfolds)
-    y_pred = np.zeros_like(data_loader.dataset.data[:, 0])
-    y_scores = np.zeros_like(data_loader.dataset.data[:, 0])
+
+    # y_scores needs to be (data_len, seq_len)
+    if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
+        y_scores = np.zeros_like(data_loader.dataset.data[:, 0])
+    else:  # (batch_size, seq_len, features)
+        y_scores = np.zeros((data_loader.dataset.data.shape[0], data_loader.dataset.data.shape[1]))
 
     # Prepare the evaluation results
     em_vals = []
@@ -113,14 +117,13 @@ def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval
         with torch.no_grad():
             for i, batch in enumerate(test_loader):
                 from_idx = i * data_loader.batch_size
-                to_idx = (i + 1) * data_loader.batch_size
-                y_pred[test_index[from_idx:to_idx]] = model.decision_function(batch)
+                to_idx = min((i + 1) * data_loader.batch_size, len(test_index))
                 y_scores[test_index[from_idx:to_idx]] = model.decision_function(batch)
 
         if eval:
             # Evaluate the model
             print("Evaluating the model...")
-            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate_torch(model, train_loader, test_loader, num_epochs=num_epochs//2, lr=lr, averaging=5)
+            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate_torch(model, train_loader, test_loader, num_epochs=num_epochs, lr=lr, averaging=2)
             em_vals.append(em_val)
             mv_vals.append(mv_val)
             em_curves.append(em_curve)
@@ -132,6 +135,7 @@ def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval
     # Transform y_pred from score to -1 (anomaly) or 1 (normal)
     # Threshold of 1 % of anomalies is used
     threshold = np.percentile(y_scores, 1)
+    y_pred = np.zeros_like(y_scores)
     y_pred[y_scores < threshold] = -1
     y_pred[y_scores >= threshold] = 1
 

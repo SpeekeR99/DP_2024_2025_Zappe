@@ -226,7 +226,7 @@ class TransformerAutoencoder(BaseAutoencoder):
         """
         with torch.no_grad():
             x_reconstructed = self.forward(x)
-            error = torch.mean((x - x_reconstructed) ** 2, dim=1)
+            error = torch.mean((x - x_reconstructed) ** 2, dim=2)
         return error.cpu().numpy()
 
 
@@ -305,6 +305,7 @@ def main():
 
     # Transform the data to numpy and drop NaN values
     data_numpy = data.dropna().to_numpy()
+    num_features = data_numpy.shape[1]
 
     # Transform data to PyTorch tensors and normalize the data
     data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
@@ -314,9 +315,9 @@ def main():
     print("Initializing the model...")
     latent_dimensions = 4
     seq_len = 300
-    # model = FFNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=latent_dimensions).to(device)
-    # model = CNNAutoencoder(input_size=data_tensor.shape[1], latent_space_size=latent_dimensions).to(device)
-    model = TransformerAutoencoder(input_size=data_tensor.shape[1], seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
+    # model = FFNNAutoencoder(input_size=num_features, latent_space_size=latent_dimensions).to(device)
+    # model = CNNAutoencoder(input_size=num_features, latent_space_size=latent_dimensions).to(device)
+    model = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
 
     # Based on model, augment with sequences (or not)
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
