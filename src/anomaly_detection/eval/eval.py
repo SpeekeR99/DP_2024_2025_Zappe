@@ -104,7 +104,8 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
     # Whenever you see this if-else statement, remember my pain, when I could not find this for a whole day
     if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
         max_features = train_loader.dataset.dataset.data.shape[1]  # Number of features
-        seq_len = train_loader.dataset.dataset.data.shape[2]
+        if len(train_loader.dataset.dataset.data.shape) == 3:  # FFNN does not have sequences at all
+            seq_len = train_loader.dataset.dataset.data.shape[2]
     else:  # (batch_size, seq_len, features)
         max_features = train_loader.dataset.dataset.data.shape[2]
         seq_len = train_loader.dataset.dataset.data.shape[1]
