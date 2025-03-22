@@ -123,7 +123,7 @@ def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval
         if eval:
             # Evaluate the model
             print("Evaluating the model...")
-            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate_torch(model, train_loader, test_loader, num_epochs=num_epochs, lr=lr, averaging=2)
+            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate_torch(model, train_loader, test_loader, num_epochs=num_epochs//2, lr=lr, averaging=5)
             em_vals.append(em_val)
             mv_vals.append(mv_val)
             em_curves.append(em_curve)
