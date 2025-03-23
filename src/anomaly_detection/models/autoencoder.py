@@ -4,19 +4,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+import wandb
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_torch_model
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
-from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
-
-import wandb
-
-WANDB_ENTITY = "thebigbook"
-WANDB_PROJECT = "anomaly_detection_DP_2025_zappe_dominik"
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES, device
 
 
 class BaseAutoencoder(nn.Module):
@@ -356,15 +350,6 @@ def main(config):
     """
     Main function
     """
-    # Initialize Weights & Biases
-    # wandb.init(
-    #     # name=config_string,
-    #     project=WANDB_PROJECT,
-    #     entity=WANDB_ENTITY,
-    #     tags=["pokus"],
-    #     config=config
-    # )
-
     # Load the config
     model_type = config["model_type"]
     num_epochs = config["epochs"]
@@ -404,7 +389,7 @@ def main(config):
 
     # Train the model
     print("Training the model...")
-    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, WANDB_PROJECT, WANDB_ENTITY, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
+    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
 
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):

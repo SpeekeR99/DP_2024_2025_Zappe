@@ -5,6 +5,7 @@ from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, Subset
 
 from src.anomaly_detection.eval.eval import evaluate, evaluate_torch, ocsvm_max_train
+from src.anomaly_detection.utils import WANDB_ENTITY, WANDB_PROJECT
 
 import wandb
 
@@ -48,7 +49,7 @@ def train_model(model, data, kfolds=5, eval=True):
         if eval:
             # Evaluate the model
             print("Evaluating the model...")
-            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate(model, data[train_index], data[test_index], averaging=5)
+            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate(model, data[train_index], data[test_index], averaging=10)
             em_vals.append(em_val)
             mv_vals.append(mv_val)
             em_curves.append(em_curve)
@@ -73,14 +74,16 @@ def train_model(model, data, kfolds=5, eval=True):
     return y_pred, y_scores, anomaly_proba
 
 
-def train_torch_model(model, data_loader, config, wandb_proj, wandb_entity, num_epochs=10, lr=1e-5, kfolds=5, eval=True):
+def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds=5, eval=True):
     """
     Train the torch model
     :param model: Model to train
     :param data_loader: Data loader
+    :param config: Configuration of the model
     :param num_epochs: Number of epochs
     :param lr: Learning rate
     :param kfolds: Number of splits in KFold
+    :param eval: Evaluate the model
     :return: Predictions, scores, probability of anomalies
              if eval is True, EM and MV values, EM and MV curves, time and alpha axis, maximum
     """
@@ -107,8 +110,8 @@ def train_torch_model(model, data_loader, config, wandb_proj, wandb_entity, num_
         wandb.init(
             group=json.dumps(config),
             name=f"{json.dumps(config)}_fold_{iter + 1}",
-            project=wandb_proj,
-            entity=wandb_entity,
+            project=WANDB_PROJECT,
+            entity=WANDB_ENTITY,
             tags=["pokus"],  # TODO: Remove this, when testing of wandb is done
             config=config
         )

@@ -1,3 +1,5 @@
+import torch
+
 MARKET_ID = "XEUR"
 DATE = "20191202"
 MARKET_SEGMENT_ID = "688"
@@ -17,3 +19,6 @@ WANTED_FEATURES = [
     "Trades Oppose Quotes",
     "Cancels Oppose Trades"
 ]
+WANDB_ENTITY = "thebigbook"
+WANDB_PROJECT = "anomaly_detection_DP_2025_zappe_dominik"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
