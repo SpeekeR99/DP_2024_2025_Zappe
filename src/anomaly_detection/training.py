@@ -10,7 +10,7 @@ from src.anomaly_detection.utils import WANDB_ENTITY, WANDB_PROJECT
 import wandb
 
 
-def train_model(model, data, kfolds=5, eval=True):
+def train_model(model, data, config, kfolds=5, eval=True):
     """
     Train the model
     :param model: Model to train
@@ -35,6 +35,14 @@ def train_model(model, data, kfolds=5, eval=True):
 
     for iter, (train_index, test_index) in enumerate(kf.split(data)):
         print(f"Training fold {iter + 1} / {kfolds}")
+        wandb.init(
+            group=json.dumps(config),
+            name=f"{json.dumps(config)}_fold_{iter + 1}",
+            project=WANDB_PROJECT,
+            entity=WANDB_ENTITY,
+            tags=["pokus"],  # TODO: Remove this, when testing of wandb is done
+            config=config
+        )
 
         # Fit the model
         if model.__class__.__name__ == "OneClassSVM":
@@ -50,6 +58,14 @@ def train_model(model, data, kfolds=5, eval=True):
             # Evaluate the model
             print("Evaluating the model...")
             em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate(model, data[train_index], data[test_index], averaging=10)
+
+            for em in em_curve:
+                wandb.log({"EM": em})
+            wandb.log({"EM_final": em_val})
+            for mv in mv_curve:
+                wandb.log({"MV": mv})
+            wandb.log({"MV_final": mv_val})
+
             em_vals.append(em_val)
             mv_vals.append(mv_val)
             em_curves.append(em_curve)
@@ -57,6 +73,8 @@ def train_model(model, data, kfolds=5, eval=True):
             t = t_
             axis_alpha = axis_alpha_
             amax = max(amax, amax_)
+
+        wandb.finish()
 
     # Calculate the anomaly probability
     y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
@@ -137,6 +155,14 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
             # Evaluate the model
             print("Evaluating the model...")
             em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate_torch(model, train_loader, test_loader, num_epochs=num_epochs, lr=lr, averaging=10)
+
+            for em in em_curve:
+                wandb.log({"EM": em})
+            wandb.log({"EM_final": em_val})
+            for mv in mv_curve:
+                wandb.log({"MV": mv})
+            wandb.log({"MV_final": mv_val})
+
             em_vals.append(em_val)
             mv_vals.append(mv_val)
             em_curves.append(em_curve)

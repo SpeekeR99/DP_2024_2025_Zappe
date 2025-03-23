@@ -49,7 +49,7 @@ def main(config):
 
     # Train the model
     print("Training the model...")
-    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_model(model, data_numpy, kfolds=kfolds, eval=True)
+    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_model(model, data_numpy, config, kfolds=kfolds, eval=True)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)

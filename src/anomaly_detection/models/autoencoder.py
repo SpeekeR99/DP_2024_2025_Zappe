@@ -60,6 +60,9 @@ class BaseAutoencoder(nn.Module):
         epochs_without_improvement = 0
         best_model_state = self.state_dict()
 
+        train_loss = 0.0
+        val_loss = 0.0
+
         for epoch in range(num_epochs):
             self.train()
             train_loss = 0.0
@@ -116,6 +119,9 @@ class BaseAutoencoder(nn.Module):
                     break
 
             lr_scheduler.step()
+
+        if log:
+            wandb.log({"train_loss_final": train_loss, "val_loss_final": val_loss})
 
     def decision_function(self, x):
         """
