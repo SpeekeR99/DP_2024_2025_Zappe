@@ -1,3 +1,4 @@
+import argparse
 import math
 import numpy as np
 import torch
@@ -9,6 +10,10 @@ from src.anomaly_detection.training import train_torch_model
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
 
+import wandb
+
+WANDB_ENTITY = "thebigbook"
+WANDB_PROJECT = "anomaly_detection_DP_2025_zappe_dominik"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -38,7 +43,7 @@ class BaseAutoencoder(nn.Module):
         x = self.decoder(x)
         return x
 
-    def fit(self, train_loader, test_loader, num_epochs=10, lr=1e-3, patience=5, log=True):
+    def fit(self, train_loader, test_loader, num_epochs=10, lr=1e-3, patience=10, log=True):
         """
         Train the model
         This function exists mostly just because of the evaluation, which is created for sklearn-style models
@@ -81,7 +86,9 @@ class BaseAutoencoder(nn.Module):
             train_loss /= len(train_loader)
 
             if log:
-                print(f"Epoch {epoch + 1}/{num_epochs}\n\tTraining Loss: {train_loss}")
+                wandb.log({"train_loss": train_loss})
+                if (epoch + 1) % 10 == 0:
+                    print(f"Epoch {epoch + 1}/{num_epochs}\n\tTraining Loss: {train_loss}")
 
             self.eval()
             val_loss = 0.0
@@ -95,7 +102,9 @@ class BaseAutoencoder(nn.Module):
             val_loss /= len(test_loader)
 
             if log:
-                print(f"\tValidation Loss: {val_loss}")
+                wandb.log({"val_loss": val_loss})
+                if (epoch + 1) % 10 == 0:
+                    print(f"\tValidation Loss: {val_loss}")
 
             # Early stopping
             if val_loss < best_loss:
@@ -342,10 +351,28 @@ def undo_sequences(data, seq_len=300):
     return y_pred, y_scores, anomaly_proba
 
 
-def main():
+def main(config):
     """
     Main function
     """
+    # Initialize Weights & Biases
+    # wandb.init(
+    #     # name=config_string,
+    #     project=WANDB_PROJECT,
+    #     entity=WANDB_ENTITY,
+    #     tags=["pokus"],
+    #     config=config
+    # )
+
+    # Load the config
+    model_type = config["model_type"]
+    num_epochs = config["epochs"]
+    kfolds = config["kfolds"]
+    batch_size = config["batch_size"]
+    lr = config["lr"]
+    seq_len = config["seq_len"]
+    latent_dim = config["latent_dim"]
+
     # Load the data
     print("Loading the data...")
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
@@ -362,26 +389,21 @@ def main():
 
     # Initialize the model
     print("Initializing the model...")
-    latent_dimensions = 4
-    seq_len = 300
-    # model = FFNNAutoencoder(input_size=num_features, latent_space_size=latent_dimensions).to(device)
-    # model = CNNAutoencoder(input_size=num_features, latent_space_size=latent_dimensions).to(device)
-    model = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
+    if model_type == "ffnn":
+        model = FFNNAutoencoder(input_size=num_features, latent_space_size=latent_dim).to(device)
+    elif model_type == "cnn":
+        model = CNNAutoencoder(input_size=num_features, latent_space_size=latent_dim).to(device)
+    elif model_type == "transformer":
+        model = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
 
     # Based on model, augment with sequences (or not)
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
         data_tensor = create_sequences(data_tensor, seq_len=seq_len, transpose=isinstance(model, CNNAutoencoder))
-    batch_size = 32
     data_loader = DataLoader(data_tensor, batch_size=batch_size)
 
     # Train the model
     print("Training the model...")
-    num_epochs = 10
-    # lr = 1e-5
-    lr = 1e-4
-    kfolds = 5
-
-    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
+    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, WANDB_PROJECT, WANDB_ENTITY, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
 
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
@@ -396,12 +418,15 @@ def main():
     print("Plotting the results...")
     time_idx = data.columns.get_loc("Time")
     indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
-    # model_names = ["FFNN Autoencoder"]
-    # model_names = ["CNN Autoencoder"]
-    model_names = ["Transformer Autoencoder"]
-    # short_model_names = ["FFNNAE"]
-    # short_model_names = ["CNNAE"]
-    short_model_names = ["TAE"]
+    if model_type == "ffnn":
+        model_names = ["FFNN Autoencoder"]
+        short_model_names = ["FFNNAE"]
+    elif model_type == "cnn":
+        model_names = ["CNN Autoencoder"]
+        short_model_names = ["CNNAE"]
+    elif model_type == "transformer":
+        model_names = ["Transformer Autoencoder"]
+        short_model_names = ["TAE"]
     em_vals = [em_val]
     mv_vals = [mv_val]
     em_curves = [em_curve]
@@ -411,10 +436,30 @@ def main():
     plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
 
     # Plot the anomalies
-    # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "FFNN Autoencoder", "FFNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
-    # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "CNN Autoencoder", "CNNAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
-    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, "Transformer Autoencoder", "TAE", data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names[0], short_model_names[0], data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--model_type", type=str, default="cnn")
+    parser.add_argument("--epochs", type=int, default=500)
+    parser.add_argument("--kfolds", type=int, default=5)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--seq_len", type=int, default=64)
+    parser.add_argument("--latent_dim", type=int, default=4)
+
+    args = parser.parse_args()
+
+    config = {
+        "model_type": args.model_type,
+        "epochs": args.epochs,
+        "kfolds": args.kfolds,
+        "batch_size": args.batch_size,
+        "lr": args.lr,
+        "seq_len": args.seq_len,
+        "latent_dim": args.latent_dim
+    }
+
+    main(config)

@@ -1,9 +1,12 @@
+import json
 import numpy as np
 import torch
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, Subset
 
 from src.anomaly_detection.eval.eval import evaluate, evaluate_torch, ocsvm_max_train
+
+import wandb
 
 
 def train_model(model, data, kfolds=5, eval=True):
@@ -29,10 +32,8 @@ def train_model(model, data, kfolds=5, eval=True):
     axis_alpha = -1
     amax = -1
 
-    iter = 1
-    for train_index, test_index in kf.split(data):
-        print(f"Training fold {iter} / {kfolds}")
-        iter += 1
+    for iter, (train_index, test_index) in enumerate(kf.split(data)):
+        print(f"Training fold {iter + 1} / {kfolds}")
 
         # Fit the model
         if model.__class__.__name__ == "OneClassSVM":
@@ -72,7 +73,7 @@ def train_model(model, data, kfolds=5, eval=True):
     return y_pred, y_scores, anomaly_proba
 
 
-def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval=True):
+def train_torch_model(model, data_loader, config, wandb_proj, wandb_entity, num_epochs=10, lr=1e-5, kfolds=5, eval=True):
     """
     Train the torch model
     :param model: Model to train
@@ -101,10 +102,16 @@ def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval
     axis_alpha = -1
     amax = -1
 
-    iter = 1
-    for train_index, test_index in kf.split(data_loader.dataset.data):
-        print(f"Training fold {iter} / {kfolds}")
-        iter += 1
+    for iter, (train_index, test_index) in enumerate(kf.split(data_loader.dataset.data)):
+        print(f"Training fold {iter + 1} / {kfolds}")
+        wandb.init(
+            group=json.dumps(config),
+            name=f"{json.dumps(config)}_fold_{iter + 1}",
+            project=wandb_proj,
+            entity=wandb_entity,
+            tags=["pokus"],  # TODO: Remove this, when testing of wandb is done
+            config=config
+        )
 
         # Create subset data loaders
         train_loader = DataLoader(Subset(data_loader.dataset, train_index), batch_size=data_loader.batch_size)
@@ -131,6 +138,8 @@ def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval
             t = t_
             axis_alpha = axis_alpha_
             amax = max(amax, amax_)
+
+        wandb.finish()
 
     # Transform y_pred from score to -1 (anomaly) or 1 (normal)
     # Threshold of 1 % of anomalies is used
