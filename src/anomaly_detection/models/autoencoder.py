@@ -38,22 +38,31 @@ class BaseAutoencoder(nn.Module):
         x = self.decoder(x)
         return x
 
-    def fit(self, train_loader, num_epochs=10, lr=1e-3):
+    def fit(self, train_loader, test_loader, num_epochs=10, lr=1e-3, patience=5, log=True):
         """
         Train the model
         This function exists mostly just because of the evaluation, which is created for sklearn-style models
         :param train_loader: DataLoader with training data
+        :param test_loader: DataLoader with test data
         :param num_epochs: Number of epochs
         :param lr: Learning rate
+        :param patience: Number of epochs without improvement before early stopping
+        :param log: Log the epochs and losses
         """
         self.to(device)
+
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
-        # Every 10 epochs, decrease the learning rate by a factor of 0.5
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+        # Every 10 epochs, decrease the learning rate by 0.1 of its current value (gamma=0.9)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
+
+        best_loss = float("inf")
+        epochs_without_improvement = 0
+        best_model_state = self.state_dict()
 
         for epoch in range(num_epochs):
-            running_loss = 0.0
+            self.train()
+            train_loss = 0.0
 
             for data_batch in train_loader:
                 data_batch = data_batch.to(device)
@@ -67,10 +76,40 @@ class BaseAutoencoder(nn.Module):
                 loss.backward()
                 optimizer.step()
 
-                running_loss += loss.item()
+                train_loss += loss.item()
 
-            running_loss /= len(train_loader)
-            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss}")
+            train_loss /= len(train_loader)
+
+            if log:
+                print(f"Epoch {epoch + 1}/{num_epochs}\n\tTraining Loss: {train_loss}")
+
+            self.eval()
+            val_loss = 0.0
+            with torch.no_grad():
+                for data_batch in test_loader:
+                    data_batch = data_batch.to(device)
+                    output = self(data_batch)
+                    loss = criterion(output, data_batch)
+                    val_loss += loss.item()
+
+            val_loss /= len(test_loader)
+
+            if log:
+                print(f"\tValidation Loss: {val_loss}")
+
+            # Early stopping
+            if val_loss < best_loss:
+                best_loss = val_loss
+                epochs_without_improvement = 0
+                best_model_state = self.state_dict()
+            else:
+                epochs_without_improvement += 1
+
+                if epochs_without_improvement >= patience:
+                    if log:
+                        print(f"Early stopping triggered after {epoch + 1} epochs")
+                    self.load_state_dict(best_model_state)
+                    break
 
             lr_scheduler.step()
 

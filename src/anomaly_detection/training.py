@@ -111,7 +111,7 @@ def train_torch_model(model, data_loader, num_epochs=10, lr=1e-5, kfolds=5, eval
         test_loader = DataLoader(Subset(data_loader.dataset, test_index), batch_size=data_loader.batch_size)
 
         # Fit the model
-        model.fit(train_loader, num_epochs=num_epochs, lr=lr)
+        model.fit(train_loader, test_loader, num_epochs=num_epochs, lr=lr)
 
         # Predict the anomalies in the data
         with torch.no_grad():

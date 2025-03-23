@@ -168,7 +168,9 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
         unif = torch.tensor(unif, dtype=torch.float32)
 
         # Fit the model
-        model.fit(DataLoader(X_train, batch_size=train_loader.batch_size), num_epochs=num_epochs, lr=lr)
+        X_train_dataloader = DataLoader(X_train, batch_size=train_loader.batch_size)
+        X_test_dataloader = DataLoader(X_test, batch_size=test_loader.batch_size)
+        model.fit(X_train_dataloader, X_test_dataloader, num_epochs=num_epochs, lr=lr, log=False)
 
         # Compute the scores
         s_X = model.decision_function(X_test)
