@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_torch_model
+from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
 
@@ -413,6 +414,12 @@ def main(config):
         # Practically undo the def create_sequences() function
         y_pred, y_scores, anomaly_proba = undo_sequences(torch.tensor(y_scores), seq_len=seq_len)
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
+
+    # Dump the raw results to results folder
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)
+
+    # Load results (just for reassurance that the function works and that the results are stored correctly)
+    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
 
     # Prepare data for plots
     print("Plotting the results...")
