@@ -49,7 +49,12 @@ class BaseAutoencoder(nn.Module):
         self.to(device)
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
+        # Every 10 epochs, decrease the learning rate by a factor of 0.5
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+
         for epoch in range(num_epochs):
+            running_loss = 0.0
+
             for data_batch in train_loader:
                 data_batch = data_batch.to(device)
                 optimizer.zero_grad()
@@ -62,7 +67,12 @@ class BaseAutoencoder(nn.Module):
                 loss.backward()
                 optimizer.step()
 
-            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {loss.item()}")
+                running_loss += loss.item()
+
+            running_loss /= len(train_loader)
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss}")
+
+            lr_scheduler.step()
 
     def decision_function(self, x):
         """
