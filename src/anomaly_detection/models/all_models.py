@@ -44,12 +44,18 @@ def main():
     # Initialize the models
     print("Initializing the models...")
     model_if = IsolationForest(contamination=0.01)
+    config_if = {"model_type": "if", "kfolds": 5}
     model_ocsvm = OneClassSVM(kernel="rbf", gamma="scale")
+    config_ocsvm = {"model_type": "ocsvm", "kfolds": 5}
     model_lof = LocalOutlierFactor(n_neighbors=32, contamination=0.01, novelty=True)
+    config_lof = {"model_type": "lof", "kfolds": 5}
     latent_dimensions = 4
     model_ffnn_ae = FFNNAutoencoder(input_size=num_features, latent_space_size=latent_dimensions).to(device)
+    config_ffnn_ae = {"model_type": "ffnn_ae", "kfolds": 5}
     model_cnn_ae = CNNAutoencoder(input_size=num_features, latent_space_size=latent_dimensions).to(device)
+    config_cnn_ae = {"model_type": "cnn_ae", "kfolds": 5}
     model_t_ae = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
+    config_t_ae = {"model_type": "t_ae", "kfolds": 5}
 
     # Train the models
     print("Training the models...")
@@ -59,37 +65,37 @@ def main():
     kfolds = 5
 
     print("Isolation Forest")
-    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if = train_model(model_if, data_numpy, kfolds=kfolds, eval=True)
+    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if = train_model(model_if, data_numpy, config_if, kfolds=kfolds, eval=True)
     print("One-Class SVM")
-    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm = train_model(model_ocsvm, data_numpy, kfolds=kfolds, eval=True)
+    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm = train_model(model_ocsvm, data_numpy, config_ocsvm, kfolds=kfolds, eval=True)
     print("Local Outlier Factor")
-    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof = train_model(model_lof, data_numpy, kfolds=kfolds, eval=True)
+    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof = train_model(model_lof, data_numpy, config_lof, kfolds=kfolds, eval=True)
     print("FFNN Autoencoder")
-    y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = train_torch_model(model_ffnn_ae, data_loader, num_epochs=num_epochs, lr=lr_e_5, kfolds=kfolds, eval=True)
+    y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = train_torch_model(model_ffnn_ae, data_loader, config_ffnn_ae, num_epochs=num_epochs, lr=lr_e_5, kfolds=kfolds, eval=True)
     print("CNN Autoencoder")
-    y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = train_torch_model(model_cnn_ae, data_loader_seq_transposed, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
+    y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = train_torch_model(model_cnn_ae, data_loader_seq_transposed, config_cnn_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
     print("Transformer Autoencoder")
-    y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = train_torch_model(model_t_ae, data_loader_seq, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
+    y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = train_torch_model(model_t_ae, data_loader_seq, config_t_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
 
     # Transform sequences back to original shapes
     y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae = undo_sequences(y_scores_cnnae, seq_len=seq_len)
     y_pred_tae, y_scores_tae, anomaly_proba_tae = undo_sequences(y_scores_tae, seq_len=seq_len)
 
     # Dump the raw results to results folder
-    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "if", "kfolds": kfolds}, y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if)
-    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ocsvm", "kfolds": kfolds}, y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm)
-    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "lof", "kfolds": kfolds}, y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof)
-    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ffnn_ae", "kfolds": kfolds}, y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae)
-    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "cnn_ae", "kfolds": kfolds}, y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae)
-    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "t_ae", "kfolds": kfolds}, y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_if, y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_ocsvm, y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_lof, y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_ffnn_ae, y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_cnn_ae, y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_t_ae, y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae)
 
     # Load results (just for reassurance that the function works and that the results are stored correctly)
-    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "if", "kfolds": kfolds})
-    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ocsvm", "kfolds": kfolds})
-    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "lof", "kfolds": kfolds})
-    y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ffnn_ae", "kfolds": kfolds})
-    y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "cnn_ae", "kfolds": kfolds})
-    y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "t_ae", "kfolds": kfolds})
+    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_if)
+    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_ocsvm)
+    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_lof)
+    y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_ffnn_ae)
+    y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_cnn_ae)
+    y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_t_ae)
 
     # Prepare data for plots
     print("Plotting the results...")
