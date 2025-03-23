@@ -8,6 +8,7 @@ from src.anomaly_detection.models.autoencoder import FFNNAutoencoder, CNNAutoenc
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_model, train_torch_model
+from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
 
@@ -73,6 +74,22 @@ def main():
     # Transform sequences back to original shapes
     y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae = undo_sequences(y_scores_cnnae, seq_len=seq_len)
     y_pred_tae, y_scores_tae, anomaly_proba_tae = undo_sequences(y_scores_tae, seq_len=seq_len)
+
+    # Dump the raw results to results folder
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "if", "kfolds": kfolds}, y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ocsvm", "kfolds": kfolds}, y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "lof", "kfolds": kfolds}, y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ffnn_ae", "kfolds": kfolds}, y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "cnn_ae", "kfolds": kfolds}, y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "t_ae", "kfolds": kfolds}, y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae)
+
+    # Load results (just for reassurance that the function works and that the results are stored correctly)
+    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "if", "kfolds": kfolds})
+    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ocsvm", "kfolds": kfolds})
+    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "lof", "kfolds": kfolds})
+    y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "ffnn_ae", "kfolds": kfolds})
+    y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "cnn_ae", "kfolds": kfolds})
+    y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, {"model_type": "t_ae", "kfolds": kfolds})
 
     # Prepare data for plots
     print("Plotting the results...")
