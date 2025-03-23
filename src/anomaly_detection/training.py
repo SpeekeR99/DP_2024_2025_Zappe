@@ -117,6 +117,9 @@ def train_torch_model(model, data_loader, config, wandb_proj, wandb_entity, num_
         train_loader = DataLoader(Subset(data_loader.dataset, train_index), batch_size=data_loader.batch_size)
         test_loader = DataLoader(Subset(data_loader.dataset, test_index), batch_size=data_loader.batch_size)
 
+        # Reset model parameters
+        model.apply(lambda m: m.reset_parameters() if hasattr(m, 'reset_parameters') else None)
+
         # Fit the model
         model.fit(train_loader, test_loader, num_epochs=num_epochs, lr=lr)
 
