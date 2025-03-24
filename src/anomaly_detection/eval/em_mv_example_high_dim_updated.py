@@ -7,7 +7,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.utils import shuffle as sh
 from sklearn.datasets import load_iris
 # https://github.com/ngoix/EMMV_benchmarks.git
-from lib.eval.em import em, mv
+from lib.my_eval.em import em, mv
 
 # This example is only an updated version of old example from https://github.com/ngoix/EMMV_benchmarks.git
 
