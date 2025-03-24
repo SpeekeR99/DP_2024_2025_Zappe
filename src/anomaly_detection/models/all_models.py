@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
+
 import torch
 from torch.utils.data import DataLoader
 from sklearn.ensemble import IsolationForest

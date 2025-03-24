@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -q gpu@pbs-m1.metacentrum.cz
 #PBS -l walltime=8:0:0
-#PBS -l select=1:ncpus=1:mem=32gb:scratch_local=64gb
+#PBS -l select=1:ncpus=1:ngpus=1:mem=32gb:scratch_local=64gb
 #PBS -N anomaly_detection_torch_training
 
 # Setup environment
