@@ -6,7 +6,7 @@
 
 # Setup environment
 CONTAINER=/cvmfs/singularity.metacentrum.cz/NGC/PyTorch:25.02-py3.SIF
-#DATADIR=/storage/plzen1/home/zapped99/s3/a7/witching_days/keep/XEUR_2021_witching_days
+# DATADIR=/storage/plzen1/home/zapped99/s3/a7/witching_days/keep/XEUR_2021_witching_days
 DATADIR=/storage/plzen1/home/zapped99/dp/mock_data
 PROJECT_DIR=/storage/plzen1/home/zapped99/dp
 API_KEY=$(cat $PROJECT_DIR/.wandb_api_key)
@@ -28,6 +28,7 @@ cd ..
 
 # Prepare the container
 singularity run $CONTAINER pip3 install -r requirements_metacentrum.txt --user
+singularity run $CONTAINER python3 -m pip install --user wandb
 singularity run $CONTAINER python3 -m wandb login --relogin $API_KEY
 
 # Run the parsing of .json to .csv augmented lobster format
