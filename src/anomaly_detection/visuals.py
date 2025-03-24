@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 
 def plot_eval_res(date, market_segment_id, security_id, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax):
@@ -75,20 +76,37 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
     if not os.path.exists(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}"):
         os.makedirs(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}")
 
+    # Get the anomalies
+    anomaly_timestamps = data_numpy[y_pred == -1, time_idx]
+    anomaly_alpha = anomaly_proba[y_pred == -1]
+    max_proba = anomaly_proba.max()
+    alpha_multiplier = -max_proba + 1.01  # This maps "sure" models to lower alpha, less "sure" models to higher alpha
+
     # Plot the anomalies for each feature
     for i, index in enumerate(indcs):
+        feature = required_features[i]
+
         fig = plt.figure(figsize=(20, 10))
         fig.suptitle(f"{model_name}")
 
-        plt.scatter(data_numpy[:, time_idx], data_numpy[:, index], color="green", label="Normal")
-        plt.scatter(data_numpy[y_pred == -1, time_idx], data_numpy[y_pred == -1, index], color="red", alpha=anomaly_proba[y_pred == -1], label="Anomaly")
+        for timestamp, anomaly_proba in zip(anomaly_timestamps, anomaly_alpha):
+            plt.axvspan(timestamp, timestamp, color="red", alpha=alpha_multiplier * anomaly_proba)
+        if "Oppose" in feature:  # Trades Oppose Quotes and Cancels Oppose Trades are categorical (True/False)
+            plt.scatter(data_numpy[:, time_idx], data_numpy[:, index], color="black", label="Normal", alpha=0.75)
+        else:
+            plt.plot(data_numpy[:, time_idx], data_numpy[:, index], color="black", label="Normal", alpha=0.75)
 
-        plt.title(required_features[i])
+        plt.title(feature)
+        plt.xlabel("Time")
+        plt.ylabel(feature)
 
-        plt.legend()
+        normal_patch = Line2D([0], [0], marker="s", color="w", markerfacecolor="black", markersize=10, label="Normal")
+        anomaly_patch = Line2D([0], [0], marker="s", color="w", markerfacecolor="red", markersize=10, label="Anomaly")
+        plt.legend(handles=[normal_patch, anomaly_patch])
+
         plt.grid()
 
-        plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{short_model_name}_{required_features[i]}.png")
+        plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{short_model_name}_{feature}.png")
         plt.show()
 
 
