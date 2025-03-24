@@ -2,7 +2,7 @@
 #PBS -q gpu@pbs-m1.metacentrum.cz
 #PBS -l walltime=1:0:0
 #PBS -l select=1:ncpus=1:ngpus=1:mem=32gb:scratch_local=64gb:cl_elbi1=False:cl_elmu1=False:cl_eluo1=False:cl_elum1=False:cl_elwe=False:cl_elmo5=False:cl_elmo4=False:cl_eltu=False:cl_elmo3=False:cl_elmo2=False:cl_elmo1=False
-#PBS -N anomaly_detection_torch_training
+#PBS -N anomaly_detection_gpu_torch_training
 
 # Setup environment
 CONTAINER=/cvmfs/singularity.metacentrum.cz/NGC/PyTorch:25.02-py3.SIF
