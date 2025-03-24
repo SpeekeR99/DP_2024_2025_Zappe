@@ -13,21 +13,19 @@ from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_model
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
-from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
+from src.anomaly_detection.utils import WANTED_FEATURES
 
 
-def main(config):
+def main(config, data_file_info):
     """
     Main function
+    :param config: Configuration of the model
+    :param data_file_info: Information about the data file
     """
-    # Initialize Weights & Biases
-    # wandb.init(
-    #     # name=config_string,
-    #     project=WANDB_PROJECT,
-    #     entity=WANDB_ENTITY,
-    #     tags=["pokus"],
-    #     config=config
-    # )
+    # Load the data file information
+    DATE = data_file_info["date"]
+    MARKET_SEGMENT_ID = data_file_info["market_segment_id"]
+    SECURITY_ID = data_file_info["security_id"]
 
     # Load the config
     model_type = config["model_type"]
@@ -90,14 +88,26 @@ def main(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--market_id", type=str, default="XEUR")
+    parser.add_argument("--date", type=str, default="20191202")
+    parser.add_argument("--market_segment_id", type=str, default="688")
+    parser.add_argument("--security_id", type=str, default="4128839")
+
     parser.add_argument("--model_type", type=str, default="if")
     parser.add_argument("--kfolds", type=int, default=5)
 
     args = parser.parse_args()
+
+    data_file_info = {
+        "market_id": args.market_id,
+        "date": args.date,
+        "market_segment_id": args.market_segment_id,
+        "security_id": args.security_id
+    }
 
     config = {
         "model_type": args.model_type,
         "kfolds": args.kfolds,
     }
 
-    main(config)
+    main(config, data_file_info)

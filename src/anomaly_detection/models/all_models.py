@@ -3,6 +3,8 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
 
+import argparse
+
 import torch
 from torch.utils.data import DataLoader
 from sklearn.ensemble import IsolationForest
@@ -15,16 +17,22 @@ from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_model, train_torch_model
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
-from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
+from src.anomaly_detection.utils import WANTED_FEATURES
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main():
+def main(data_file_info):
     """
     Main function
+    :param data_file_info: Information about the data file
     """
+    # Load the data file information
+    DATE = data_file_info["date"]
+    MARKET_SEGMENT_ID = data_file_info["market_segment_id"]
+    SECURITY_ID = data_file_info["security_id"]
+
     # Load the data
     print("Loading the data...")
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
@@ -127,4 +135,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--market_id", type=str, default="XEUR")
+    parser.add_argument("--date", type=str, default="20191202")
+    parser.add_argument("--market_segment_id", type=str, default="688")
+    parser.add_argument("--security_id", type=str, default="4128839")
+
+    args = parser.parse_args()
+
+    data_file_info = {
+        "market_id": args.market_id,
+        "date": args.date,
+        "market_segment_id": args.market_segment_id,
+        "security_id": args.security_id
+    }
+
+    main(data_file_info)

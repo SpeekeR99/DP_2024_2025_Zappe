@@ -1,3 +1,5 @@
+import argparse
+
 import os
 import pickle
 import numpy as np
@@ -7,13 +9,19 @@ from lib.diffi.diffi.diffi import diffi_score
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.visuals import plot_feat_corr, plot_feat_imp
-from src.anomaly_detection.utils import DATE, MARKET_SEGMENT_ID, SECURITY_ID, WANTED_FEATURES
+from src.anomaly_detection.utils import WANTED_FEATURES
 
 
-def main():
+def main(data_file_info):
     """
     Main function
+    :param data_file_info: Information about the data file
     """
+    # Load the data file information
+    DATE = data_file_info["date"]
+    MARKET_SEGMENT_ID = data_file_info["market_segment_id"]
+    SECURITY_ID = data_file_info["security_id"]
+
     # Load the data
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
 
@@ -70,4 +78,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--market_id", type=str, default="XEUR")
+    parser.add_argument("--date", type=str, default="20191202")
+    parser.add_argument("--market_segment_id", type=str, default="688")
+    parser.add_argument("--security_id", type=str, default="4128839")
+
+    args = parser.parse_args()
+
+    data_file_info = {
+        "market_id": args.market_id,
+        "date": args.date,
+        "market_segment_id": args.market_segment_id,
+        "security_id": args.security_id
+    }
+
+    main(data_file_info)

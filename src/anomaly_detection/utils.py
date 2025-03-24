@@ -1,9 +1,5 @@
 import torch
 
-MARKET_ID = "XEUR"
-DATE = "20191202"
-MARKET_SEGMENT_ID = "688"
-SECURITY_ID = "4128839"
 WANTED_FEATURES = [
     "Time",
     "Ask Price 1",
