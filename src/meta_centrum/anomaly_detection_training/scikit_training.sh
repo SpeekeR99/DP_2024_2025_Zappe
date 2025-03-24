@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -q default@pbs-m1.metacentrum.cz
-#PBS -l walltime=8:0:0
+#PBS -l walltime=1:0:0
 #PBS -l select=1:ncpus=1:mem=32gb:scratch_local=64gb
 #PBS -N anomaly_detection_torch_training
 
@@ -29,8 +29,8 @@ singularity run $CONTAINER pip3 install -r requirements_metacentrum.txt --user
 singularity run $CONTAINER python3 -m wandb login --relogin API_KEY
 
 # Run the parsing of .json to .csv augmented lobster format
-singularity run $CONTAINER python3 JSON_TO_LOBSTER $market_id $date $market_segment_id $security_id
-singularity run $CONTAINER python3 AUGMENT_LOBSTER $market_id $date $market_segment_id $security_id
+singularity run $CONTAINER python3 $JSON_TO_LOBSTER $market_id $date $market_segment_id $security_id
+singularity run $CONTAINER python3 $AUGMENT_LOBSTER $market_id $date $market_segment_id $security_id
 
 # Run the Python script
 singularity run $CONTAINER python3 $MAIN_SCRIPT --model_type $model_type --kfolds $kfolds

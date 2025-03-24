@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from sklearn.utils import shuffle
 # https://github.com/ngoix/EMMV_benchmarks.git
-from lib.eval.em import em, mv
+from lib.my_eval.em import em, mv
 
 ocsvm_max_train = 10000
 
