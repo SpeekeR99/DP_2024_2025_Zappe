@@ -46,9 +46,10 @@ def main(data_file_info):
     # Transform data to PyTorch tensors and normalize the data
     data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the data
+    data_tensor = data_tensor.to(device)
     seq_len = 300
-    data_tensor_seq = create_sequences(data_tensor, seq_len=seq_len, transpose=False)
-    data_tensor_seq_transposed = create_sequences(data_tensor, seq_len=seq_len, transpose=True)
+    data_tensor_seq = create_sequences(data_tensor, seq_len=seq_len, transpose=False).to(device)
+    data_tensor_seq_transposed = create_sequences(data_tensor, seq_len=seq_len, transpose=True).to(device)
     batch_size = 32
     data_loader = DataLoader(data_tensor, batch_size=batch_size)
     data_loader_seq = DataLoader(data_tensor_seq, batch_size=batch_size)

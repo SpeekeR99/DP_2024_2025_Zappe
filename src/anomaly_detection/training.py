@@ -110,7 +110,7 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
 
     # y_scores needs to be (data_len, seq_len)
     if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
-        y_scores = np.zeros_like(data_loader.dataset.data[:, 0])
+        y_scores = np.zeros_like(data_loader.dataset.data[:, 0].cpu().numpy())
     else:  # (batch_size, seq_len, features)
         y_scores = np.zeros((data_loader.dataset.data.shape[0], data_loader.dataset.data.shape[1]))
 

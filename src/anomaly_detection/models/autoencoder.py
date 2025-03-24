@@ -390,6 +390,7 @@ def main(config, data_file_info):
     # Transform data to PyTorch tensors and normalize the data
     data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the datas
+    data_tensor = data_tensor.to(device)
 
     # Initialize the model
     print("Initializing the model...")
@@ -402,7 +403,7 @@ def main(config, data_file_info):
 
     # Based on model, augment with sequences (or not)
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
-        data_tensor = create_sequences(data_tensor, seq_len=seq_len, transpose=isinstance(model, CNNAutoencoder))
+        data_tensor = create_sequences(data_tensor, seq_len=seq_len, transpose=isinstance(model, CNNAutoencoder)).to(device)
     data_loader = DataLoader(data_tensor, batch_size=batch_size)
 
     # Train the model

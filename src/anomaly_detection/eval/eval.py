@@ -2,8 +2,12 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from sklearn.utils import shuffle
+
 # https://github.com/ngoix/EMMV_benchmarks.git
 from lib.my_eval.em import em, mv
+
+from src.anomaly_detection.utils import device
+
 
 ocsvm_max_train = 10000
 
@@ -149,7 +153,7 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
                 lim_inf = torch.amin(X_test, dim=(0, 1))
                 lim_sup = torch.amax(X_test, dim=(0, 1))
         epsilon = 1e-4  # To avoid division by zero
-        volume_support = (lim_sup - lim_inf + epsilon).prod().numpy()
+        volume_support = (lim_sup - lim_inf + epsilon).prod().cpu().numpy()
 
         # Compute the time and alpha axis
         t = np.linspace(0, 100 / volume_support, n_generated)
@@ -158,14 +162,14 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
         if len(X_train.shape) == 2:
             unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, max_features))
         else:  # X_trian.shape[2] == seq_len
-            lim_inf_expanded = np.repeat(lim_inf[:, np.newaxis], seq_len, axis=1)
-            lim_sup_expanded = np.repeat(lim_sup[:, np.newaxis], seq_len, axis=1)
+            lim_inf_expanded = np.repeat(lim_inf.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
+            lim_sup_expanded = np.repeat(lim_sup.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
             # Even here, yes, again ...
             if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
                 unif = np.random.uniform(lim_inf_expanded, lim_sup_expanded, size=(n_generated, max_features, seq_len))
             else:  # (batch_size, seq_len, features)
                 unif = np.random.uniform(lim_inf_expanded.T, lim_sup_expanded.T, size=(n_generated, seq_len, max_features))
-        unif = torch.tensor(unif, dtype=torch.float32)
+        unif = torch.tensor(unif, dtype=torch.float32).to(device)
 
         # Fit the model
         X_train_dataloader = DataLoader(X_train, batch_size=train_loader.batch_size)
