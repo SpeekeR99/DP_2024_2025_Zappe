@@ -13,6 +13,7 @@ import wandb
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_torch_model
+from src.anomaly_detection.result_transform import transform_ys
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import WANTED_FEATURES, device
@@ -325,7 +326,7 @@ def undo_sequences(data, seq_len=300):
     So forth up until seq_len, then every timestamp has seq_len values across seq_len windows
     :param data: Data tensor (y_scores expected)
     :param seq_len: Sequence length
-    :return: Predictions, scores and anomaly probabilities in the right shapes
+    :return: Scores in the right shape
     """
     # Get the number of windows and the sequence length (300 in your case)
     num_windows, window_size = data.shape
@@ -343,18 +344,7 @@ def undo_sequences(data, seq_len=300):
     for i in range(original_length):
         reconstructed_data[i] /= min(i + 1, seq_len, original_length - i)  # Normalize by the number of windows contributing to the value
 
-    y_scores = reconstructed_data.cpu().numpy()
-    y_pred = np.zeros_like(y_scores)
-
-    # Calculate the y_pred based on the anomaly prediction of contamination (1 %)
-    threshold = np.percentile(y_scores, 1)
-    y_pred[y_scores < threshold] = -1
-    y_pred[y_scores >= threshold] = 1
-    # Calculate the anomaly probability
-    y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
-    anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "certainty" it is an anomaly
-
-    return y_pred, y_scores, anomaly_proba
+    return reconstructed_data.cpu().numpy()
 
 
 def main(config, data_file_info):
@@ -408,7 +398,7 @@ def main(config, data_file_info):
 
     # Train the model
     print("Training the model...")
-    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
+    y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
 
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
@@ -416,8 +406,10 @@ def main(config, data_file_info):
         # Aka take the it as a sliding window, so there's 300 predicitions for each data point (except the first 299 points)
         # 1, 2, 3, ... , 299, 300, 300, 300, ... , 300
         # Practically undo the def create_sequences() function
-        y_pred, y_scores, anomaly_proba = undo_sequences(torch.tensor(y_scores), seq_len=seq_len)
+        y_scores = undo_sequences(torch.tensor(y_scores), seq_len=seq_len)
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
+
+    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)

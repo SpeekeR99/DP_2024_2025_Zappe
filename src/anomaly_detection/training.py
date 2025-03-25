@@ -16,12 +16,10 @@ def train_model(model, data, config, kfolds=5, eval=True):
     :param model: Model to train
     :param data: Data
     :param kfolds: Number of splits in KFold
-    :return: Predictions, scores, probability of anomalies
-             if eval is True, EM and MV values, EM and MV curves, time and alpha axis, maximum
+    :return: Scores and if eval is True, EM and MV values, EM and MV curves, time and alpha axis, maximum
     """
     # Prepare the data for KFold
     kf = KFold(n_splits=kfolds)
-    y_pred = np.zeros_like(data[:, 0])
     y_scores = np.zeros_like(data[:, 0])
 
     # Prepare the evaluation results
@@ -51,7 +49,6 @@ def train_model(model, data, config, kfolds=5, eval=True):
             model.fit(data[train_index])
 
         # Predict the anomalies in the data
-        y_pred[test_index] = model.predict(data[test_index])
         y_scores[test_index] = model.score_samples(data[test_index])
 
         if eval:
@@ -76,10 +73,6 @@ def train_model(model, data, config, kfolds=5, eval=True):
 
         wandb.finish()
 
-    # Calculate the anomaly probability
-    y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
-    anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "certainty" it is an anomaly
-
     # Average the evaluation results
     if eval:
         em_val = np.mean(em_vals)
@@ -87,9 +80,9 @@ def train_model(model, data, config, kfolds=5, eval=True):
         em_curve = np.mean(em_curves, axis=0)
         mv_curve = np.mean(mv_curves, axis=0)
 
-        return y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax
+        return y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax
 
-    return y_pred, y_scores, anomaly_proba
+    return y_scores
 
 
 def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds=5, eval=True):
@@ -102,8 +95,7 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
     :param lr: Learning rate
     :param kfolds: Number of splits in KFold
     :param eval: Evaluate the model
-    :return: Predictions, scores, probability of anomalies
-             if eval is True, EM and MV values, EM and MV curves, time and alpha axis, maximum
+    :return: Scores and if eval is True, EM and MV values, EM and MV curves, time and alpha axis, maximum
     """
     # Prepare the data for KFold
     kf = KFold(n_splits=kfolds)
@@ -173,17 +165,6 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
 
         wandb.finish()
 
-    # Transform y_pred from score to -1 (anomaly) or 1 (normal)
-    # Threshold of 1 % of anomalies is used
-    threshold = np.percentile(y_scores, 1)
-    y_pred = np.zeros_like(y_scores)
-    y_pred[y_scores < threshold] = -1
-    y_pred[y_scores >= threshold] = 1
-
-    # Calculate the anomaly probability
-    y_scores_norm = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
-    anomaly_proba = 1 - y_scores_norm  # The lower the original score, the higher "certainty" it is an anomaly
-
     # Average the evaluation results
     if eval:
         em_val = np.mean(em_vals)
@@ -191,6 +172,6 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
         em_curve = np.mean(em_curves, axis=0)
         mv_curve = np.mean(mv_curves, axis=0)
 
-        return y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax
+        return y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax
 
-    return y_pred, y_scores, anomaly_proba
+    return y_scores

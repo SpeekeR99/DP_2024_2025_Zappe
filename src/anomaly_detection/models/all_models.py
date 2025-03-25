@@ -15,12 +15,10 @@ from src.anomaly_detection.models.autoencoder import FFNNAutoencoder, CNNAutoenc
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_model, train_torch_model
+from src.anomaly_detection.result_transform import transform_ys
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
-from src.anomaly_detection.utils import WANTED_FEATURES
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from src.anomaly_detection.utils import WANTED_FEATURES, device
 
 
 def main(data_file_info):
@@ -79,21 +77,29 @@ def main(data_file_info):
     kfolds = 5
 
     print("Isolation Forest")
-    y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if = train_model(model_if, data_numpy, config_if, kfolds=kfolds, eval=True)
+    y_scores_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if = train_model(model_if, data_numpy, config_if, kfolds=kfolds, eval=True)
     print("One-Class SVM")
-    y_pred_ocsvm, y_scores_ocsvm, anomaly_proba_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm = train_model(model_ocsvm, data_numpy, config_ocsvm, kfolds=kfolds, eval=True)
+    y_scores_ocsvm, em_val_ocsvm, mv_val_ocsvm, em_curve_ocsvm, mv_curve_ocsvm, t_ocsvm, axis_alpha_ocsvm, amax_ocsvm = train_model(model_ocsvm, data_numpy, config_ocsvm, kfolds=kfolds, eval=True)
     print("Local Outlier Factor")
-    y_pred_lof, y_scores_lof, anomaly_proba_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof = train_model(model_lof, data_numpy, config_lof, kfolds=kfolds, eval=True)
+    y_scores_lof, em_val_lof, mv_val_lof, em_curve_lof, mv_curve_lof, t_lof, axis_alpha_lof, amax_lof = train_model(model_lof, data_numpy, config_lof, kfolds=kfolds, eval=True)
     print("FFNN Autoencoder")
-    y_pred_ffnnae, y_scores_ffnnae, anomaly_proba_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = train_torch_model(model_ffnn_ae, data_loader, config_ffnn_ae, num_epochs=num_epochs, lr=lr_e_5, kfolds=kfolds, eval=True)
+    y_scores_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = train_torch_model(model_ffnn_ae, data_loader, config_ffnn_ae, num_epochs=num_epochs, lr=lr_e_5, kfolds=kfolds, eval=True)
     print("CNN Autoencoder")
-    y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = train_torch_model(model_cnn_ae, data_loader_seq_transposed, config_cnn_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
+    y_scores_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = train_torch_model(model_cnn_ae, data_loader_seq_transposed, config_cnn_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
     print("Transformer Autoencoder")
-    y_pred_tae, y_scores_tae, anomaly_proba_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = train_torch_model(model_t_ae, data_loader_seq, config_t_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
+    y_scores_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = train_torch_model(model_t_ae, data_loader_seq, config_t_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
 
     # Transform sequences back to original shapes
-    y_pred_cnnae, y_scores_cnnae, anomaly_proba_cnnae = undo_sequences(y_scores_cnnae, seq_len=seq_len)
-    y_pred_tae, y_scores_tae, anomaly_proba_tae = undo_sequences(y_scores_tae, seq_len=seq_len)
+    y_scores_cnnae = undo_sequences(y_scores_cnnae, seq_len=seq_len)
+    y_scores_tae = undo_sequences(y_scores_tae, seq_len=seq_len)
+
+    # Transform the scores to predictions based on expected contamination
+    y_pred_if, anomaly_proba_if = transform_ys(y_scores_if, contamination=0.01)
+    y_pred_ocsvm, anomaly_proba_ocsvm = transform_ys(y_scores_ocsvm, contamination=0.01)
+    y_pred_lof, anomaly_proba_lof = transform_ys(y_scores_lof, contamination=0.01)
+    y_pred_ffnnae, anomaly_proba_ffnnae = transform_ys(y_scores_ffnnae, contamination=0.01)
+    y_pred_cnnae, anomaly_proba_cnnae = transform_ys(y_scores_cnnae, contamination=0.01)
+    y_pred_tae, anomaly_proba_tae = transform_ys(y_scores_tae, contamination=0.01)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_if, y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if)
