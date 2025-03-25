@@ -1,6 +1,8 @@
 import os
 import numpy as np
+import datetime
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from matplotlib.lines import Line2D
 
 
@@ -76,8 +78,17 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
     if not os.path.exists(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}"):
         os.makedirs(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}")
 
+    # Convert the time data to datetime
+    time_data = np.array([
+        (datetime.datetime.min + datetime.timedelta(seconds=t // 1e9))
+        for t in data_numpy[:, time_idx]
+    ])
+
     # Get the anomalies
-    anomaly_timestamps = data_numpy[y_pred == -1, time_idx]
+    anomaly_timestamps = np.array([
+        (datetime.datetime.min + datetime.timedelta(seconds=t // 1e9))
+        for t in data_numpy[y_pred == -1, time_idx]
+    ])
     anomaly_alpha = anomaly_proba[y_pred == -1]
     max_proba = anomaly_proba.max()
     alpha_multiplier = -max_proba + 1.01  # This maps "sure" models to lower alpha, less "sure" models to higher alpha
@@ -92,13 +103,16 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
         for timestamp, anomaly_proba in zip(anomaly_timestamps, anomaly_alpha):
             plt.axvspan(timestamp, timestamp, color="red", alpha=alpha_multiplier * anomaly_proba)
         if "Oppose" in feature:  # Trades Oppose Quotes and Cancels Oppose Trades are categorical (True/False)
-            plt.scatter(data_numpy[:, time_idx], data_numpy[:, index], color="black", label="Normal", alpha=0.75)
+            plt.scatter(time_data, data_numpy[:, index], color="black", label="Normal", alpha=0.75)
         else:
-            plt.plot(data_numpy[:, time_idx], data_numpy[:, index], color="black", label="Normal", alpha=0.75)
+            plt.plot(time_data, data_numpy[:, index], color="black", label="Normal", alpha=0.75)
 
         plt.title(feature)
         plt.xlabel("Time")
         plt.ylabel(feature)
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+        plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        plt.xticks(rotation=22.5, ha='right')
 
         normal_patch = Line2D([0], [0], marker="s", color="w", markerfacecolor="black", markersize=10, label="Normal")
         anomaly_patch = Line2D([0], [0], marker="s", color="w", markerfacecolor="red", markersize=10, label="Anomaly")
@@ -140,7 +154,7 @@ def plot_feat_corr(date, market_segment_id, security_id, corr_matrix):
     ax.set_xticks(np.arange(len(labels)))
     ax.set_yticks(np.arange(len(labels)))
     labels_clipped = [label[:10] for label in labels]
-    ax.set_xticklabels(labels_clipped, rotation=45//4)
+    ax.set_xticklabels(labels_clipped, rotation=22.5, ha='right')
     ax.set_yticklabels(labels)
 
     ax.set_xlabel("Feature")
@@ -170,7 +184,7 @@ def plot_feat_imp(date, market_segment_id, security_id, feature_importance_dict,
     # Boxplot for each feature
     plt.boxplot([feature_importance_dict[feature] for feature in feature_importance_dict])
 
-    plt.xticks(range(1, len(wanted_features) + 1), wanted_features, rotation=45 // 2)
+    plt.xticks(range(1, len(wanted_features) + 1), wanted_features, rotation=22.5, ha='right')
 
     plt.title("Feature Importance")
 
