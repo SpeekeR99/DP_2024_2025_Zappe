@@ -11,6 +11,7 @@ from sklearn.neighbors import LocalOutlierFactor
 
 from src.anomaly_detection.dataloader import load_data
 from src.anomaly_detection.training import train_model
+from src.anomaly_detection.result_transform import transform_ys
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import WANTED_FEATURES
@@ -52,7 +53,9 @@ def main(config, data_file_info):
 
     # Train the model
     print("Training the model...")
-    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_model(model, data_numpy, config, kfolds=kfolds, eval=True)
+    y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_model(model, data_numpy, config, kfolds=kfolds, eval=True)
+
+    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)
