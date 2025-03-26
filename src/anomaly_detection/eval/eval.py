@@ -88,7 +88,7 @@ def evaluate_torch(model, train_loader, test_loader, s_X, n_generated=100000, al
     axis_alpha = np.arange(alpha_min, alpha_max, 0.0001)
     # Generate uniform samples
     if len(X_train.shape) == 2:
-        unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, n_features))
+        unif = np.random.uniform(lim_inf.cpu().numpy(), lim_sup.cpu().numpy(), size=(n_generated, n_features))
     else:  # X_trian.shape[2] == seq_len
         lim_inf_expanded = np.repeat(lim_inf.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
         lim_sup_expanded = np.repeat(lim_sup.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
