@@ -5,6 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
 
 import argparse
 import math
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -116,7 +117,7 @@ class BaseAutoencoder(nn.Module):
                     print(f"\tValidation Loss: {val_loss}")
 
             # Early stopping
-            if torch.abs(val_loss - last_val_loss) < 0.01:
+            if np.abs(val_loss - last_val_loss) < 1e-5:
                 epochs_without_much_change += 1
 
                 if epochs_without_much_change >= patience // 3:
