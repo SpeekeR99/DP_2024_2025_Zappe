@@ -1,4 +1,5 @@
 import json
+import pickle
 import numpy as np
 import torch
 from sklearn.model_selection import KFold
@@ -47,6 +48,12 @@ def train_model(model, data, config, kfolds=5, eval=True):
             model.fit(data[train_index][:min(ocsvm_max_train, len(data[train_index]) - 1)])
         else:
             model.fit(data[train_index])
+        # Save the model
+        with open(f"models/{json.dumps(config)}_fold_{iter + 1}.pkl", "wb") as fp:
+            pickle.dump(model, fp)
+        # Load in the future as:
+        # with open(f"models/{json.dumps(config)}_fold_{iter + 1}.pkl", "rb") as fp:
+        #     model = pickle.load(fp)
 
         # Predict the anomalies in the data
         y_scores[test_index] = model.score_samples(data[test_index])
@@ -135,6 +142,10 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
 
         # Fit the model
         model.fit(train_loader, test_loader, num_epochs=num_epochs, lr=lr)
+        # Save the model
+        model.save_model(f"models/{json.dumps(config)}_fold_{iter + 1}")
+        # Load in the future as:
+        # model.load_model(f"models/{json.dumps(config)}_fold_{iter + 1}")
 
         # Predict the anomalies in the data
         with torch.no_grad():

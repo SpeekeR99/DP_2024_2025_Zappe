@@ -54,38 +54,39 @@ def main(config, data_file_info):
     # Train the model
     print("Training the model...")
     y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_model(model, data_numpy, config, kfolds=kfolds, eval=True)
+    # y_scores = train_model(model, data_numpy, config, kfolds=kfolds, eval=False)
 
     y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)
 
-    # Load results (just for reassurance that the function works and that the results are stored correctly)
-    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
-
-    # Prepare data for plots
-    print("Plotting the results...")
-    time_idx = data.columns.get_loc("Time")
-    indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
-    if model_type == "if":
-        model_names = ["Isolation Forest"]
-        short_model_names = ["IF"]
-    elif model_type == "ocsvm":
-        model_names = ["One-Class SVM"]
-        short_model_names = ["OCSVM"]
-    elif model_type == "lof":
-        model_names = ["Local Outlier Factor"]
-        short_model_names = ["LOF"]
-    em_vals = [em_val]
-    mv_vals = [mv_val]
-    em_curves = [em_curve]
-    mv_curves = [mv_curve]
-
-    # Plot the evaluation results
-    plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
-
-    # Plot the anomalies
-    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names[0], short_model_names[0], data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+    # # Load results (just for reassurance that the function works and that the results are stored correctly)
+    # y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
+    #
+    # # Prepare data for plots
+    # print("Plotting the results...")
+    # time_idx = data.columns.get_loc("Time")
+    # indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
+    # if model_type == "if":
+    #     model_names = ["Isolation Forest"]
+    #     short_model_names = ["IF"]
+    # elif model_type == "ocsvm":
+    #     model_names = ["One-Class SVM"]
+    #     short_model_names = ["OCSVM"]
+    # elif model_type == "lof":
+    #     model_names = ["Local Outlier Factor"]
+    #     short_model_names = ["LOF"]
+    # em_vals = [em_val]
+    # mv_vals = [mv_val]
+    # em_curves = [em_curve]
+    # mv_curves = [mv_curve]
+    #
+    # # Plot the evaluation results
+    # plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
+    #
+    # # Plot the anomalies
+    # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names[0], short_model_names[0], data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
 
 
 if __name__ == "__main__":

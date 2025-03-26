@@ -5,7 +5,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
 
 import argparse
 import math
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -141,6 +140,20 @@ class BaseAutoencoder(nn.Module):
             x_reconstructed = self.forward(x)
             error = torch.mean((x - x_reconstructed) ** 2, dim=1)  # Compute MSE per sample
         return error.cpu().numpy()  # Convert to NumPy for sklearn-style usage
+
+    def save_model(self, path):
+        """
+        Save the model
+        :param path: Path to save the model
+        """
+        torch.save(self.state_dict(), path)
+
+    def load_model(self, path):
+        """
+        Load the model
+        :param path: Path to load the model
+        """
+        self.load_state_dict(torch.load(path))
 
 
 class FFNNAutoencoder(BaseAutoencoder):
@@ -399,6 +412,7 @@ def main(config, data_file_info):
     # Train the model
     print("Training the model...")
     y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
+    # y_scores = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=False)
 
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
@@ -414,32 +428,32 @@ def main(config, data_file_info):
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)
 
-    # Load results (just for reassurance that the function works and that the results are stored correctly)
-    y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
-
-    # Prepare data for plots
-    print("Plotting the results...")
-    time_idx = data.columns.get_loc("Time")
-    indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
-    if model_type == "ffnn":
-        model_names = ["FFNN Autoencoder"]
-        short_model_names = ["FFNNAE"]
-    elif model_type == "cnn":
-        model_names = ["CNN Autoencoder"]
-        short_model_names = ["CNNAE"]
-    elif model_type == "transformer":
-        model_names = ["Transformer Autoencoder"]
-        short_model_names = ["TAE"]
-    em_vals = [em_val]
-    mv_vals = [mv_val]
-    em_curves = [em_curve]
-    mv_curves = [mv_curve]
-
-    # Plot the evaluation results
-    plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
-
-    # Plot the anomalies
-    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names[0], short_model_names[0], data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+    # # Load results (just for reassurance that the function works and that the results are stored correctly)
+    # y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
+    #
+    # # Prepare data for plots
+    # print("Plotting the results...")
+    # time_idx = data.columns.get_loc("Time")
+    # indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
+    # if model_type == "ffnn":
+    #     model_names = ["FFNN Autoencoder"]
+    #     short_model_names = ["FFNNAE"]
+    # elif model_type == "cnn":
+    #     model_names = ["CNN Autoencoder"]
+    #     short_model_names = ["CNNAE"]
+    # elif model_type == "transformer":
+    #     model_names = ["Transformer Autoencoder"]
+    #     short_model_names = ["TAE"]
+    # em_vals = [em_val]
+    # mv_vals = [mv_val]
+    # em_curves = [em_curve]
+    # mv_curves = [mv_curve]
+    #
+    # # Plot the evaluation results
+    # plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
+    #
+    # # Plot the anomalies
+    # plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names[0], short_model_names[0], data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
 
 
 if __name__ == "__main__":
