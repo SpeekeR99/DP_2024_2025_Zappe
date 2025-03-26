@@ -26,6 +26,14 @@ MAIN_SCRIPT=src/anomaly_detection/models/if_ocsvm_lof.py
 cd $SCRATCHDIR
 cp -r $PROJECT_DIR/DP_2024_2025_Zappe/* .
 
+# Clean the results and models directory on scratch
+cd res
+rm -rf ./*
+cd ..
+cd models
+rm -rf ./*
+cd ..
+
 # Copy data files to scratch/data
 data_file="${market_id}_${date}_${market_segment_id}_${security_id}_detailed.zip"
 cp $DATADIR/$data_file ./data
@@ -57,7 +65,9 @@ singularity run $CONTAINER python3 $MAIN_SCRIPT --market_id $market_id --date $d
 # └─────────────────────────────────────────────────────────────────────────────────────────┘
 # Copy out the results
 mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
-cp -r res $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
+cp -r res/* $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
+mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/models/$PBS_JOBID
+cp -r models/* $PROJECT_DIR/DP_2024_2025_Zappe/models/$PBS_JOBID
 
 # ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 # |            Cleanup                                                                      |
