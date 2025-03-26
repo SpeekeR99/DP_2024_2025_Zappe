@@ -82,6 +82,9 @@ class BaseAutoencoder(nn.Module):
 
                 # Backward pass
                 loss.backward()
+                # Gradient clipping
+                torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
+                # Optimize
                 optimizer.step()
 
                 train_loss += loss.item()
@@ -283,7 +286,9 @@ class TransformerAutoencoder(BaseAutoencoder):
         :param x: Input data
         :return: Output data
         """
-        # x shape: (batch_size, features, seq_len)
+        # x shape: (batch_size, seq_len, features)
+        x = x.permute(0, 2, 1)  # Change to (batch_size, features, seq_len)
+
         x = self.embedding(x)
         x = self.pos_encoder(x)
 
@@ -291,8 +296,12 @@ class TransformerAutoencoder(BaseAutoencoder):
         memory = self.encoder(x)
 
         # Decoder
-        output = self.decoder(x, memory)
+        tgt_mask = torch.nn.Transformer.generate_square_subsequent_mask(x.size(1)).to(x.device)
+        output = self.decoder(x, memory, tgt_mask=tgt_mask)
+        # output = self.decoder(x, memory)
         output = self.output_layer(output)
+
+        output = output.permute(0, 2, 1)  # Change back to (batch_size, seq_len, features)
         return output
 
     def decision_function(self, x):
@@ -308,23 +317,16 @@ class TransformerAutoencoder(BaseAutoencoder):
         return error.cpu().numpy()
 
 
-def create_sequences(data, seq_len=300, transpose=False):
+def create_sequences(data, seq_len=300):
     """
     Create sequences from the data
     :param data: Data tensor
     :param seq_len: Sequence length
-    :param transpose: Transpose the data
     :return: Sequences for CNN/Transformer models
     """
     # Create the sliding windows (output shape: [num_samples, seq_len, num_features])
     windows = torch.stack([data[i:i + seq_len] for i in range(len(data) - seq_len + 1)])
-    # Funnily enough, the CNN expects the channels to be the second dimension and sequences to be the third
-    # (batch_size, features, seq_len)
-    # However, Transformer expects the sequences to be the second dimension and features to be the third
-    # (batch_size, seq_len, features)
-    # This little thing caused a lot of troubles later on in the code with evaluation
-    if transpose:
-        windows = windows.permute(0, 2, 1)
+    windows = windows.permute(0, 2, 1)
     return windows
 
 
@@ -393,7 +395,8 @@ def main(config, data_file_info):
     # Transform data to PyTorch tensors and normalize the data
     data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the datas
-    data_tensor = data_tensor.to(device)
+    data_tensor = create_sequences(data_tensor, seq_len=seq_len).to(device)
+    data_loader = DataLoader(data_tensor, batch_size=batch_size)
 
     # Initialize the model
     print("Initializing the model...")
@@ -402,17 +405,12 @@ def main(config, data_file_info):
     elif model_type == "cnn":
         model = CNNAutoencoder(input_size=num_features, latent_space_size=latent_dim).to(device)
     elif model_type == "transformer":
-        model = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
-
-    # Based on model, augment with sequences (or not)
-    if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
-        data_tensor = create_sequences(data_tensor, seq_len=seq_len, transpose=isinstance(model, CNNAutoencoder)).to(device)
-    data_loader = DataLoader(data_tensor, batch_size=batch_size)
+        model = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=32, num_layers=2, num_heads=4).to(device)
 
     # Train the model
     print("Training the model...")
-    y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
-    # y_scores = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=False)
+    # y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
+    y_scores = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=False)
 
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
