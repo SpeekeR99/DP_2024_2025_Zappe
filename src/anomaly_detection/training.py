@@ -5,7 +5,7 @@ import torch
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, Subset
 
-from src.anomaly_detection.eval.eval import evaluate, evaluate_torch, ocsvm_max_train
+from src.anomaly_detection.eval.eval import evaluate, evaluate_torch
 from src.anomaly_detection.utils import WANDB_ENTITY, WANDB_PROJECT
 
 import wandb
@@ -44,15 +44,12 @@ def train_model(model, data, config, kfolds=5, eval=True):
         )
 
         # Fit the model
-        if model.__class__.__name__ == "OneClassSVM":
-            model.fit(data[train_index][:min(ocsvm_max_train, len(data[train_index]) - 1)])
-        else:
-            model.fit(data[train_index])
+        model.fit(data[train_index])
         # Save the model
-        with open(f"models/{json.dumps(config)}_fold_{iter + 1}.pkl", "wb") as fp:
+        with open(f"models/{model.__class__.__name__}_fold_{iter + 1}.pkl", "wb") as fp:
             pickle.dump(model, fp)
         # Load in the future as:
-        # with open(f"models/{json.dumps(config)}_fold_{iter + 1}.pkl", "rb") as fp:
+        # with open(f"models/{model.__class__.__name__}_fold_{iter + 1}.pkl", "rb") as fp:
         #     model = pickle.load(fp)
 
         # Predict the anomalies in the data
@@ -61,7 +58,7 @@ def train_model(model, data, config, kfolds=5, eval=True):
         if eval:
             # Evaluate the model
             print("Evaluating the model...")
-            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate(model, data[train_index], data[test_index], averaging=10)
+            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate(model, data[train_index], data[test_index])
 
             for em in em_curve:
                 wandb.log({"EM": em})
@@ -140,9 +137,9 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
         # Fit the model
         model.fit(train_loader, test_loader, num_epochs=num_epochs, lr=lr)
         # Save the model
-        model.save_model(f"models/{json.dumps(config)}_fold_{iter + 1}")
+        model.save_model(f"models/{model.__class__.__name__}_fold_{iter + 1}")
         # Load in the future as:
-        # model.load_model(f"models/{json.dumps(config)}_fold_{iter + 1}")
+        # model.load_model(f"models/{model.__class__.__name__}_fold_{iter + 1}")
 
         # Predict the anomalies in the data
         with torch.no_grad():
@@ -154,7 +151,7 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
         if eval:
             # Evaluate the model
             print("Evaluating the model...")
-            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate_torch(model, train_loader, test_loader, num_epochs=num_epochs, lr=lr, averaging=10)
+            em_val, mv_val, em_curve, mv_curve, t_, axis_alpha_, amax_ = evaluate_torch(model, train_loader, test_loader, y_scores[test_index])
 
             for em in em_curve:
                 wandb.log({"EM": em})

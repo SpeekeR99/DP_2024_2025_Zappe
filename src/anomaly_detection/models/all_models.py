@@ -11,9 +11,10 @@ from sklearn.ensemble import IsolationForest
 from sklearn.svm import OneClassSVM
 from sklearn.neighbors import LocalOutlierFactor
 
-from src.anomaly_detection.models.autoencoder import FFNNAutoencoder, CNNAutoencoder, TransformerAutoencoder, create_sequences, undo_sequences
+from src.anomaly_detection.models.autoencoder import FFNNAutoencoder, CNNAutoencoder, TransformerAutoencoder
 
 from src.anomaly_detection.dataloader import load_data
+from src.anomaly_detection.sequences import create_sequences, undo_sequences
 from src.anomaly_detection.training import train_model, train_torch_model
 from src.anomaly_detection.result_transform import transform_ys
 from src.anomaly_detection.results_file_io import store_results, load_results
