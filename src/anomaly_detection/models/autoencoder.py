@@ -139,10 +139,9 @@ class BaseAutoencoder(nn.Module):
         :return: Reconstruction error
         """
         with torch.no_grad():
-            x = x.view(x.size(0), -1)  # Ensure flattened input
             x_reconstructed = self.forward(x)
-            error = torch.mean((x - x_reconstructed) ** 2, dim=1)  # Compute MSE per sample
-        return error.cpu().numpy()  # Convert to NumPy for sklearn-style usage
+            error = torch.mean((x - x_reconstructed) ** 2, dim=1)
+        return error.cpu().numpy()
 
     def save_model(self, path):
         """
@@ -182,6 +181,19 @@ class FFNNAutoencoder(BaseAutoencoder):
             nn.Sigmoid()
         )
 
+    def decision_function(self, x):
+        """
+        Returns the reconstruction error for input x
+        This function exists mostly just because of the evaluation, which is created for sklearn-style models
+        :param x: Input data
+        :return: Reconstruction error
+        """
+        with torch.no_grad():
+            x = x.view(x.size(0), -1)  # Ensure flattened input
+            x_reconstructed = self.forward(x)
+            error = torch.mean((x - x_reconstructed) ** 2, dim=1)
+        return error.cpu().numpy()
+
 
 class CNNAutoencoder(BaseAutoencoder):
     """
@@ -210,18 +222,6 @@ class CNNAutoencoder(BaseAutoencoder):
             nn.ConvTranspose1d(latent_space_size // 2, input_size, kernel_size=4, stride=2, padding=1),
             nn.Sigmoid()  # Ensure output is in [0, 1] if normalized
         )
-
-    def decision_function(self, x):
-        """
-        Returns the reconstruction error for input x
-        This function exists mostly just because of the evaluation, which is created for sklearn-style models
-        :param x: Input data
-        :return: Reconstruction error
-        """
-        with torch.no_grad():
-            x_reconstructed = self.forward(x)
-            error = torch.mean((x - x_reconstructed) ** 2, dim=1)  # Compute MSE per sample
-        return error.cpu().numpy()  # Convert to NumPy for sklearn-style usage
 
 
 class PositionalEncoding(nn.Module):
@@ -286,8 +286,8 @@ class TransformerAutoencoder(BaseAutoencoder):
         :param x: Input data
         :return: Output data
         """
-        # x shape: (batch_size, seq_len, features)
-        x = x.permute(0, 2, 1)  # Change to (batch_size, features, seq_len)
+        # x shape: (batch_Size, features, seq_len)
+        x = x.permute(0, 2, 1)  # Change to (batch_size, seq_len, features)
 
         x = self.embedding(x)
         x = self.pos_encoder(x)
@@ -301,20 +301,8 @@ class TransformerAutoencoder(BaseAutoencoder):
         # output = self.decoder(x, memory)
         output = self.output_layer(output)
 
-        output = output.permute(0, 2, 1)  # Change back to (batch_size, seq_len, features)
+        output = output.permute(0, 2, 1)  # Change back to (batch_size, features, seq_len)
         return output
-
-    def decision_function(self, x):
-        """
-        Returns the reconstruction error for input x
-        This function exists mostly just because of the evaluation, which is created for sklearn-style models
-        :param x: Input data
-        :return: Reconstruction error
-        """
-        with torch.no_grad():
-            x_reconstructed = self.forward(x)
-            error = torch.mean((x - x_reconstructed) ** 2, dim=2)
-        return error.cpu().numpy()
 
 
 def create_sequences(data, seq_len=300):
@@ -409,8 +397,8 @@ def main(config, data_file_info):
 
     # Train the model
     print("Training the model...")
-    # y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
-    y_scores = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=False)
+    y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=True)
+    # y_scores = train_torch_model(model, data_loader, config, num_epochs=num_epochs, lr=lr, kfolds=kfolds, eval=False)
 
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
     if isinstance(model, CNNAutoencoder) or isinstance(model, TransformerAutoencoder):
