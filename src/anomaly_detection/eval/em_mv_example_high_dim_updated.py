@@ -12,6 +12,7 @@ from lib.my_eval.em import em, mv
 # This example is only an updated version of old example from https://github.com/ngoix/EMMV_benchmarks.git
 
 # Parameters
+max_features = 5
 averaging = 50  # Number of feature sub-sampling iterations
 n_generated = 100000
 alpha_min = 0.9
@@ -27,8 +28,6 @@ if not os.path.exists(f"img/eval"):
 # Load the data
 data = load_iris()
 X, y = data.data, data.target
-
-max_features = X.shape[1]
 
 n_samples, n_features = np.shape(X)
 n_samples_train = n_samples // 2
