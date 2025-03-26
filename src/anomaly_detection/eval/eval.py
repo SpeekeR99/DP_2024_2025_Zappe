@@ -101,20 +101,11 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
     :param t_max: T maximum
     :return: EM and MV scores, EM and MV curves, time and alpha axis, maximum
     """
-    # Funnily enough, the CNN expects the channels to be the second dimension and sequences to be the third
-    # (batch_size, features, seq_len)
-    # However, Transformer expects the sequences to be the second dimension and features to be the third
-    # (batch_size, seq_len, features)
-    # Whenever you see this if-else statement, remember my pain, when I could not find this for a whole day
-    if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
-        max_features = train_loader.dataset.dataset.data.shape[1]  # Number of features
-        if len(train_loader.dataset.dataset.data.shape) == 3:  # FFNN does not have sequences at all
-            seq_len = train_loader.dataset.dataset.data.shape[2]
-    else:  # (batch_size, seq_len, features)
-        max_features = train_loader.dataset.dataset.data.shape[2]
-        seq_len = train_loader.dataset.dataset.data.shape[1]
+    # Max features and sequence length
+    max_features = train_loader.dataset.dataset.data.shape[1]  # Number of features
     n_generated_orig = n_generated
-    if len(train_loader.dataset.dataset.data.shape) == 3:
+    if len(train_loader.dataset.dataset.data.shape) == 3:  # FFNN does not have sequences at all
+        seq_len = train_loader.dataset.dataset.data.shape[2]
         n_generated //= seq_len
 
     # Initialize EM and MV accumulators
@@ -130,13 +121,8 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
 
         # Randomly select the features
         features = shuffle(np.arange(max_features))[:max_features]
-        # If-else statement from hell again
-        if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
-            X_train = train_loader.dataset.dataset.data[:, features]
-            X_test = test_loader.dataset.dataset.data[:, features]
-        else:  # (batch_size, seq_len, features)
-            X_train = train_loader.dataset.dataset.data[:, :, features]
-            X_test = test_loader.dataset.dataset.data[:, :, features]
+        X_train = train_loader.dataset.dataset.data[:, features]
+        X_test = test_loader.dataset.dataset.data[:, features]
 
         # Compute the volume of the support
         # The below code works for FFNN, but CNN/Transformer needs sequences
@@ -145,13 +131,8 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
             lim_inf = X_test.min(axis=0).values
             lim_sup = X_test.max(axis=0).values
         else:
-            # And again ...
-            if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
-                lim_inf = torch.amin(X_test, dim=(0, 2))
-                lim_sup = torch.amax(X_test, dim=(0, 2))
-            else: # (batch_size, seq_len, features)
-                lim_inf = torch.amin(X_test, dim=(0, 1))
-                lim_sup = torch.amax(X_test, dim=(0, 1))
+            lim_inf = torch.amin(X_test, dim=(0, 2))
+            lim_sup = torch.amax(X_test, dim=(0, 2))
         epsilon = 1e-4  # To avoid division by zero
         volume_support = (lim_sup - lim_inf + epsilon).prod().cpu().numpy()
 
@@ -164,11 +145,7 @@ def evaluate_torch(model, train_loader, test_loader, num_epochs=10, lr=1e-5, ave
         else:  # X_trian.shape[2] == seq_len
             lim_inf_expanded = np.repeat(lim_inf.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
             lim_sup_expanded = np.repeat(lim_sup.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
-            # Even here, yes, again ...
-            if not model.__class__.__name__ == "TransformerAutoencoder":  # (batch_size, features, seq_len)
-                unif = np.random.uniform(lim_inf_expanded, lim_sup_expanded, size=(n_generated, max_features, seq_len))
-            else:  # (batch_size, seq_len, features)
-                unif = np.random.uniform(lim_inf_expanded.T, lim_sup_expanded.T, size=(n_generated, seq_len, max_features))
+            unif = np.random.uniform(lim_inf_expanded, lim_sup_expanded, size=(n_generated, max_features, seq_len))
         unif = torch.tensor(unif, dtype=torch.float32).to(device)
 
         # Fit the model

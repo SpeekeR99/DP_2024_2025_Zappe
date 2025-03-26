@@ -46,12 +46,10 @@ def main(data_file_info):
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the data
     data_tensor = data_tensor.to(device)
     seq_len = 300
-    data_tensor_seq = create_sequences(data_tensor, seq_len=seq_len, transpose=False).to(device)
-    data_tensor_seq_transposed = create_sequences(data_tensor, seq_len=seq_len, transpose=True).to(device)
+    data_tensor_seq = create_sequences(data_tensor, seq_len=seq_len).to(device)
     batch_size = 32
     data_loader = DataLoader(data_tensor, batch_size=batch_size)
     data_loader_seq = DataLoader(data_tensor_seq, batch_size=batch_size)
-    data_loader_seq_transposed = DataLoader(data_tensor_seq_transposed, batch_size=batch_size)
 
     # Initialize the models
     print("Initializing the models...")
@@ -66,7 +64,7 @@ def main(data_file_info):
     config_ffnn_ae = {"model_type": "ffnn_ae", "kfolds": 5}
     model_cnn_ae = CNNAutoencoder(input_size=num_features, latent_space_size=latent_dimensions).to(device)
     config_cnn_ae = {"model_type": "cnn_ae", "kfolds": 5}
-    model_t_ae = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=64, num_layers=4, num_heads=8).to(device)
+    model_t_ae = TransformerAutoencoder(input_size=num_features, seq_len=seq_len, d_model=32, num_layers=2, num_heads=4).to(device)
     config_t_ae = {"model_type": "t_ae", "kfolds": 5}
 
     # Train the models
@@ -85,7 +83,7 @@ def main(data_file_info):
     print("FFNN Autoencoder")
     y_scores_ffnnae, em_val_ffnnae, mv_val_ffnnae, em_curve_ffnnae, mv_curve_ffnnae, t_ffnnae, axis_alpha_ffnnae, amax_ffnnae = train_torch_model(model_ffnn_ae, data_loader, config_ffnn_ae, num_epochs=num_epochs, lr=lr_e_5, kfolds=kfolds, eval=True)
     print("CNN Autoencoder")
-    y_scores_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = train_torch_model(model_cnn_ae, data_loader_seq_transposed, config_cnn_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
+    y_scores_cnnae, em_val_cnnae, mv_val_cnnae, em_curve_cnnae, mv_curve_cnnae, t_cnnae, axis_alpha_cnnae, amax_cnnae = train_torch_model(model_cnn_ae, data_loader_seq, config_cnn_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
     print("Transformer Autoencoder")
     y_scores_tae, em_val_tae, mv_val_tae, em_curve_tae, mv_curve_tae, t_tae, axis_alpha_tae, amax_tae = train_torch_model(model_t_ae, data_loader_seq, config_t_ae, num_epochs=num_epochs, lr=lr_e_4, kfolds=kfolds, eval=True)
 
