@@ -64,10 +64,12 @@ class BaseAutoencoder(nn.Module):
 
         best_loss = float("inf")
         epochs_without_improvement = 0
+        epochs_without_much_change = 0
         best_model_state = self.state_dict()
 
         train_loss = 0.0
         val_loss = 0.0
+        last_val_loss = float("inf")
 
         for epoch in range(num_epochs):
             self.train()
@@ -114,6 +116,17 @@ class BaseAutoencoder(nn.Module):
                     print(f"\tValidation Loss: {val_loss}")
 
             # Early stopping
+            if torch.abs(val_loss - last_val_loss) < 0.01:
+                epochs_without_much_change += 1
+
+                if epochs_without_much_change >= patience // 3:
+                    if log:
+                        print(f"Early stopping triggered after {epoch + 1} epochs")
+                    break
+            else:
+                epochs_without_much_change = 0
+            last_val_loss = val_loss
+
             if val_loss < best_loss:
                 best_loss = val_loss
                 epochs_without_improvement = 0
