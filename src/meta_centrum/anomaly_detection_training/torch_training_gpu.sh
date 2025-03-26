@@ -65,9 +65,9 @@ singularity run --nv $CONTAINER python3 $MAIN_SCRIPT --market_id $market_id --da
 # └─────────────────────────────────────────────────────────────────────────────────────────┘
 # Copy out the results
 mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
-cp -r res/* $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
+cp -r res $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
 mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/models/$PBS_JOBID
-cp -r models/* $PROJECT_DIR/DP_2024_2025_Zappe/models/$PBS_JOBID
+cp -r models $PROJECT_DIR/DP_2024_2025_Zappe/models/$PBS_JOBID
 
 # ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 # |            Cleanup                                                                      |
