@@ -122,7 +122,7 @@ class BaseAutoencoder(nn.Module):
 
                 if epochs_without_much_change >= patience // 3:
                     if log:
-                        print(f"Early stopping triggered after {epoch + 1} epochs")
+                        print(f"Early stopping triggered after {epoch + 1} epochs (No improvement)")
                     break
             else:
                 epochs_without_much_change = 0
@@ -137,7 +137,7 @@ class BaseAutoencoder(nn.Module):
 
                 if epochs_without_improvement >= patience:
                     if log:
-                        print(f"Early stopping triggered after {epoch + 1} epochs")
+                        print(f"Early stopping triggered after {epoch + 1} epochs (Possible overfitting)")
                     self.load_state_dict(best_model_state)
                     break
 
@@ -353,7 +353,10 @@ def main(config, data_file_info):
     # Transform data to PyTorch tensors and normalize the data
     data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the datas
-    data_tensor = create_sequences(data_tensor, seq_len=seq_len).to(device)
+    if model_type == "ffnn":  # FFNN does not need sequences
+        data_tensor = data_tensor.to(device)
+    else:  # CNN/Transformer needs sequences
+        data_tensor = create_sequences(data_tensor, seq_len=seq_len).to(device)
     data_loader = DataLoader(data_tensor, batch_size=batch_size)
 
     # Initialize the model
