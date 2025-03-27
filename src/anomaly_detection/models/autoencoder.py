@@ -365,7 +365,7 @@ def main(config, data_file_info):
     print("Loading the data...")
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
-    data = data.head(1000)
+    # data = data.head(1000)
 
     # Transform the data to numpy and drop NaN values
     data_numpy = data.dropna().to_numpy()
