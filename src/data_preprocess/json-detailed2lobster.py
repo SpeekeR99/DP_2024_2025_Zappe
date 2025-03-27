@@ -189,7 +189,8 @@ print("Creating orderbook...")
 # Initialize data structures
 lobster_buy = [[] for _ in range(max_index)]
 lobster_sell = [[] for _ in range(max_index)]
-timestamps = list(dict(sorted(instructions.items())).keys())
+timestamps = list(dict(sorted({k: v for k, v in instructions.items() if k is not None}.items())).keys())
+timestamps += [timestamps[-1]] * (max_index - len(timestamps))
 cancellations_buy = {}
 cancellations_sell = {}
 trades_buy = {}
