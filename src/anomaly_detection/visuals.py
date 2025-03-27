@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -23,8 +24,8 @@ def plot_eval_res(date, market_segment_id, security_id, model_names, short_model
     :param amax: Alpha maximum
     """
     # Create the output directory if it does not exist
-    if not os.path.exists(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}"):
-        os.makedirs(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}")
+    if not os.path.exists(f"img/eval/{date}_{market_segment_id}_{security_id}"):
+        os.makedirs(f"img/eval/{date}_{market_segment_id}_{security_id}")
 
     # Plot the evaluation results
     for i in range(2):  # Plot non-log and log scale versions
@@ -65,9 +66,9 @@ def plot_eval_res(date, market_segment_id, security_id, model_names, short_model
 
         file_name = "_".join(short_model_names)
         if i != 0:
-            plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval_log.png")
+            plt.savefig(f"img/eval/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval_log.png")
         else:
-            plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval.png")
+            plt.savefig(f"img/eval/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval.png")
         plt.show()
 
 
@@ -166,7 +167,7 @@ def plot_feat_corr(date, market_segment_id, security_id, corr_matrix):
     ax.set_xticks(np.arange(len(labels)))
     ax.set_yticks(np.arange(len(labels)))
     labels_clipped = [label[:10] for label in labels]
-    ax.set_xticklabels(labels_clipped, rotation=22.5, ha='right')
+    ax.set_xticklabels(labels_clipped, rotation=22.5, ha='left')
     ax.set_yticklabels(labels)
 
     ax.set_xlabel("Feature")
@@ -204,3 +205,56 @@ def plot_feat_imp(date, market_segment_id, security_id, feature_importance_dict,
 
     plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/feature_importance.png")
     plt.show()
+
+
+def plot_basic_dimensional_vis(date, market_segment_id, security_id):
+    """
+    Plot the basic dimensional visualization
+    :param date: Date of the data
+    :param market_segment_id: Market segment ID
+    :param security_id: Security ID
+    """
+    FILE_PATH = f"data/{date}_{market_segment_id}_{security_id}_lobster_augmented.csv"
+    if not os.path.exists(f"img/features/{date}_{market_segment_id}_{security_id}"):
+        os.makedirs(f"img/features/{date}_{market_segment_id}_{security_id}")
+
+    data = pandas.read_csv(FILE_PATH)
+    data_numpy = data.to_numpy()
+    time_idx = data.columns.get_loc("Time")
+
+    # Convert the time data to datetime
+    time_data = np.array([
+        (datetime.datetime.min + datetime.timedelta(seconds=t // 1e9))
+        for t in data_numpy[:, time_idx]
+    ])
+
+    # Visualize all the columns in the dataset with "Time" on the x-axis
+    for column in data.columns:
+        if column == "Time" or "Ask Price" in column or "Bid Price" in column or "Ask Volume" in column or "Bid Volume" in column:
+            if column != "Ask Price 1" and column != "Bid Price 1" and column != "Ask Volume 1" and column != "Bid Volume 1":
+                continue
+        plt.figure(figsize=(20, 10))
+        plt.title(column)
+
+        if "Oppose" in column:  # Trades Oppose Quotes and Cancels Oppose Trades are categorical (True/False)
+            plt.scatter(time_data, data[column], color="black", label=column)
+        else:
+            plt.plot(time_data, data[column], color="black", label=column)
+
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+        plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        plt.xticks(rotation=22.5, ha='right')
+
+        plt.grid()
+        plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/{column}.png")
+        plt.show()
+
+
+if __name__ == "__main__":
+    # DATE = 20191202
+    # MARKET_SEGMENT_ID = 688
+    # SECURITY_ID = 4128839
+    DATE = "20210319"
+    MARKET_SEGMENT_ID = "589"
+    SECURITY_ID = "5594748"
+    plot_basic_dimensional_vis(DATE, MARKET_SEGMENT_ID, SECURITY_ID)
