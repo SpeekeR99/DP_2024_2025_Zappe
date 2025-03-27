@@ -67,6 +67,7 @@ class BaseAutoencoder(nn.Module):
         epochs_without_improvement = 0
         epochs_without_much_change = 0
         best_model_state = self.state_dict()
+        val_loss_delta_thresh = 0.01 if self.__class__.__name__ == "TransformerAutoencoder" else 1e-5
 
         train_loss = 0.0
         val_loss = 0.0
@@ -117,7 +118,7 @@ class BaseAutoencoder(nn.Module):
                     print(f"\tValidation Loss: {val_loss}")
 
             # Early stopping
-            if np.abs(val_loss - last_val_loss) < 1e-5:
+            if np.abs(val_loss - last_val_loss) < val_loss_delta_thresh:
                 epochs_without_much_change += 1
 
                 if epochs_without_much_change >= patience // 3:
@@ -146,7 +147,7 @@ class BaseAutoencoder(nn.Module):
         if log:
             wandb.log({"train_loss_final": train_loss, "val_loss_final": val_loss})
 
-    def decision_function(self, x):
+    def score_samples(self, x):
         """
         Returns the reconstruction error for input x
         This function exists mostly just because of the evaluation, which is created for sklearn-style models
@@ -157,6 +158,26 @@ class BaseAutoencoder(nn.Module):
             x_reconstructed = self.forward(x)
             error = torch.mean((x - x_reconstructed) ** 2, dim=1)
         return error.cpu().numpy()
+
+    def decision_function(self, x, contamination=0.01, y_scores=None):
+        """
+        Returns the decision function, which is basically the same a score_samples, just offset
+        so that the 0 is at the decision boundary (which is driven by the contamination parameter)
+        Basically, we want to match the Scikit-implementation, where lower score is more abnormal,
+        bigger score is more normal (our score is loss, so it's the opposite!)
+        We basically have to take -score_samples(x) + offset, where offset is the score at the contamination quantile
+        :param x: Input data
+        :param contamination: Contamination parameter
+        :param y_scores: Y scores (if already computed, why not use it)
+        :return: Decision function
+        """
+        if y_scores is None:
+            y_scores = self.score_samples(x)
+
+        threshold = len(y_scores) * (1 - contamination)
+        offset = np.sort(y_scores)[int(threshold)]
+
+        return -y_scores + offset
 
     def save_model(self, path):
         """
@@ -196,7 +217,7 @@ class FFNNAutoencoder(BaseAutoencoder):
             nn.Sigmoid()
         )
 
-    def decision_function(self, x):
+    def score_samples(self, x):
         """
         Returns the reconstruction error for input x
         This function exists mostly just because of the evaluation, which is created for sklearn-style models
@@ -382,7 +403,7 @@ def main(config, data_file_info):
         y_scores = undo_sequences(torch.tensor(y_scores), seq_len=seq_len)
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
 
-    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01)
+    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01, lower_is_better=True)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)

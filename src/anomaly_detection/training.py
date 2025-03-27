@@ -146,7 +146,7 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
             for i, batch in enumerate(test_loader):
                 from_idx = i * data_loader.batch_size
                 to_idx = min((i + 1) * data_loader.batch_size, len(test_index))
-                y_scores[test_index[from_idx:to_idx]] = model.decision_function(batch)
+                y_scores[test_index[from_idx:to_idx]] = model.score_samples(batch)
 
         if eval:
             # Evaluate the model

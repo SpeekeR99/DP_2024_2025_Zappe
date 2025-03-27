@@ -46,7 +46,7 @@ def main(data_file_info):
     data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the data
     data_tensor = data_tensor.to(device)
-    seq_len = 300
+    seq_len = 64
     data_tensor_seq = create_sequences(data_tensor, seq_len=seq_len).to(device)
     batch_size = 32
     data_loader = DataLoader(data_tensor, batch_size=batch_size)
@@ -93,12 +93,12 @@ def main(data_file_info):
     y_scores_tae = undo_sequences(y_scores_tae, seq_len=seq_len)
 
     # Transform the scores to predictions based on expected contamination
-    y_pred_if, anomaly_proba_if = transform_ys(y_scores_if, contamination=0.01)
-    y_pred_ocsvm, anomaly_proba_ocsvm = transform_ys(y_scores_ocsvm, contamination=0.01)
-    y_pred_lof, anomaly_proba_lof = transform_ys(y_scores_lof, contamination=0.01)
-    y_pred_ffnnae, anomaly_proba_ffnnae = transform_ys(y_scores_ffnnae, contamination=0.01)
-    y_pred_cnnae, anomaly_proba_cnnae = transform_ys(y_scores_cnnae, contamination=0.01)
-    y_pred_tae, anomaly_proba_tae = transform_ys(y_scores_tae, contamination=0.01)
+    y_pred_if, anomaly_proba_if = transform_ys(y_scores_if, contamination=0.01, lower_is_better=False)
+    y_pred_ocsvm, anomaly_proba_ocsvm = transform_ys(y_scores_ocsvm, contamination=0.01, lower_is_better=False)
+    y_pred_lof, anomaly_proba_lof = transform_ys(y_scores_lof, contamination=0.01, lower_is_better=False)
+    y_pred_ffnnae, anomaly_proba_ffnnae = transform_ys(y_scores_ffnnae, contamination=0.01, lower_is_better=True)
+    y_pred_cnnae, anomaly_proba_cnnae = transform_ys(y_scores_cnnae, contamination=0.01, lower_is_better=True)
+    y_pred_tae, anomaly_proba_tae = transform_ys(y_scores_tae, contamination=0.01, lower_is_better=True)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config_if, y_pred_if, y_scores_if, anomaly_proba_if, em_val_if, mv_val_if, em_curve_if, mv_curve_if, t_if, axis_alpha_if, amax_if)

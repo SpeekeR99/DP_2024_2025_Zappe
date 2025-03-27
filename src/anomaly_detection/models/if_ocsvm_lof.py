@@ -56,7 +56,7 @@ def main(config, data_file_info):
     y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = train_model(model, data_numpy, config, kfolds=kfolds, eval=True)
     # y_scores = train_model(model, data_numpy, config, kfolds=kfolds, eval=False)
 
-    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01)
+    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01, lower_is_better=False)
 
     # Dump the raw results to results folder
     store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)
