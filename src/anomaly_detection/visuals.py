@@ -27,36 +27,48 @@ def plot_eval_res(date, market_segment_id, security_id, model_names, short_model
         os.makedirs(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}")
 
     # Plot the evaluation results
-    fig = plt.figure(figsize=(20, 10))
-    fig.suptitle(f"{date}_{market_segment_id}_{security_id}")
+    for i in range(2):  # Plot non-log and log scale versions
+        fig = plt.figure(figsize=(20, 10))
+        fig.suptitle(f"{date}_{market_segment_id}_{security_id}")
 
-    for model_name, em_val, mv_val, em_curve, mv_curve in zip(model_names, em_vals, mv_vals, em_curves, mv_curves):
+        for model_name, em_val, mv_val, em_curve, mv_curve in zip(model_names, em_vals, mv_vals, em_curves, mv_curves):
+            plt.subplot(121)
+            plt.plot(t[:amax], em_curve[:amax], lw=1, label=f"{model_name} (EM-score = {em_val:.3e})")
+
+            plt.subplot(122)
+            plt.plot(axis_alpha, mv_curve, lw=1, label=f"{model_name} (AUC = {mv_val:.3f})")
+
         plt.subplot(121)
-        plt.plot(t[:amax], em_curve[:amax], lw=1, label=f"{model_name} (EM-score = {em_val:.3e})")
+        plt.ylim([-0.05, 1.05])
+        if i != 0:
+            plt.xlabel("log(t)")
+            plt.xscale("log")
+        else:
+            plt.xlabel("t")
+        plt.ylabel("EM(t)")
+
+        plt.title("Excess Mass (EM) curves")
+        plt.legend()
+        plt.grid()
 
         plt.subplot(122)
-        plt.plot(axis_alpha, mv_curve, lw=1, label=f"{model_name} (AUC = {mv_val:.3f})")
+        plt.xlabel("alpha")
+        if i != 0:
+            plt.ylabel("log(MV(alpha))")
+            plt.yscale("log")
+        else:
+            plt.ylabel("MV(alpha)")
 
-    plt.subplot(121)
-    plt.ylim([-0.05, 1.05])
-    plt.xlabel("t")
-    plt.ylabel("EM(t)")
+        plt.title("Mass-Volume (MV) curves")
+        plt.legend()
+        plt.grid()
 
-    plt.title("Excess Mass (EM) curves")
-    plt.legend()
-    plt.grid()
-
-    plt.subplot(122)
-    plt.xlabel("alpha")
-    plt.ylabel("MV(alpha)")
-
-    plt.title("Mass-Volume (MV) curves")
-    plt.legend()
-    plt.grid()
-
-    short_model_names = "_".join(short_model_names)
-    plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{short_model_names}_EM_MV_eval.png")
-    plt.show()
+        file_name = "_".join(short_model_names)
+        if i != 0:
+            plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval_log.png")
+        else:
+            plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval.png")
+        plt.show()
 
 
 def plot_anomalies(date, market_segment_id, security_id, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred, anomaly_proba, required_features):
