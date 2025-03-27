@@ -5,6 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
 
 import argparse
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from sklearn.ensemble import IsolationForest
@@ -138,6 +139,26 @@ def main(data_file_info):
     # Plot the anomalies
     for model_name, short_model_name, y_pred, anomaly_proba in zip(model_names, short_model_names, y_preds, anomaly_probas):
         plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+
+    # Ensemble -- average model of Isolation Forest, FFNN Autoencoder, CNN Autoencoder, Transformer Autoencoder
+    model_name = "Ensemble (Isolation Forest, FFNN Autoencoder, CNN Autoencoder, Transformer Autoencoder)"
+    short_model_name = "Ensemble_IF_FFNN_CNN_T"
+
+    # Isolation Forest score -- lower is anomaly, but we want higher to be anomaly
+    y_scores_if = -y_scores_if
+
+    # Normalize the scores so we can take a "meaningful" average of them
+    y_scores_if = (y_scores_if - y_scores_if.min()) / (y_scores_if.max() - y_scores_if.min())
+    y_scores_ffnnae = (y_scores_ffnnae - y_scores_ffnnae.min()) / (y_scores_ffnnae.max() - y_scores_ffnnae.min())
+    y_scores_cnnae = (y_scores_cnnae - y_scores_cnnae.min()) / (y_scores_cnnae.max() - y_scores_cnnae.min())
+    y_scores_tae = (y_scores_tae - y_scores_tae.min()) / (y_scores_tae.max() - y_scores_tae.min())
+
+    # Create the ensemble model by averaging the normalized scores
+    y_scores_ensemble = np.mean([y_scores_if, y_scores_ffnnae, y_scores_cnnae, y_scores_tae], axis=0)
+    y_pred_ensemble, anomaly_proba_ensemble = transform_ys(y_scores_ensemble, contamination=0.01, lower_is_better=True)
+
+    # Plot the anomalies
+    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred_ensemble, anomaly_proba_ensemble, WANTED_FEATURES[1:])
 
 
 if __name__ == "__main__":

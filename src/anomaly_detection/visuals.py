@@ -102,8 +102,8 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
         for t in data_numpy[y_pred == -1, time_idx]
     ])
     anomaly_alpha = anomaly_proba[y_pred == -1]
-    max_proba = anomaly_proba.max()
-    alpha_multiplier = -max_proba + 1.01  # This maps "sure" models to lower alpha, less "sure" models to higher alpha
+    # Normalize the alpha to [0, 1]
+    anomaly_alpha = (anomaly_alpha - anomaly_alpha.min()) / (anomaly_alpha.max() - anomaly_alpha.min())
 
     # Plot the anomalies for each feature
     for i, index in enumerate(indcs):
@@ -113,7 +113,7 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
         fig.suptitle(f"{model_name}")
 
         for timestamp, anomaly_proba in zip(anomaly_timestamps, anomaly_alpha):
-            plt.axvspan(timestamp, timestamp, color="red", alpha=alpha_multiplier * anomaly_proba)
+            plt.axvspan(timestamp, timestamp, color="red", alpha=0.1 * anomaly_proba)
         if "Oppose" in feature:  # Trades Oppose Quotes and Cancels Oppose Trades are categorical (True/False)
             plt.scatter(time_data, data_numpy[:, index], color="black", label="Normal", alpha=0.75)
         else:
