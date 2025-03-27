@@ -31,6 +31,7 @@ def train_model(model, data, config, kfolds=5, eval=True):
     t = -1
     axis_alpha = -1
     amax = -1
+    ocsvm_max_train = 100_000  # OCSVM is really slow, slower than Transformer, so we limit the training data
 
     for iter, (train_index, test_index) in enumerate(kf.split(data)):
         print(f"Training fold {iter + 1} / {kfolds}")
@@ -44,7 +45,10 @@ def train_model(model, data, config, kfolds=5, eval=True):
         )
 
         # Fit the model
-        model.fit(data[train_index])
+        if model.__class__.__name__ == "OneClassSVM":
+            model.fit(data[train_index][:min(ocsvm_max_train, len(train_index))])
+        else:
+            model.fit(data[train_index])
         # Save the model
         with open(f"models/{model.__class__.__name__}_fold_{iter + 1}.pkl", "wb") as fp:
             pickle.dump(model, fp)
