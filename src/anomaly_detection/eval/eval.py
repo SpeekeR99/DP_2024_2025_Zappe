@@ -30,7 +30,7 @@ def evaluate(model, data_train, data_test, n_generated=100000, alpha_min=0.9, al
 
     # Compute the time and alpha axis
     t = np.linspace(0, 100 / volume_support, n_generated)
-    axis_alpha = np.linspace(alpha_min, alpha_max, len(np.zeros(int((alpha_max - alpha_min) / 0.001))))
+    axis_alpha = np.arange(alpha_min, alpha_max, 0.0001)
     unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, n_features))  # Generate uniform samples
 
     # model.fit(data_train)  # Fit the model
@@ -48,13 +48,13 @@ def evaluate(model, data_train, data_test, n_generated=100000, alpha_min=0.9, al
     return em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax
 
 
-def evaluate_torch(model, train_loader, test_loader, s_X, n_generated=100000, alpha_min=0.9, alpha_max=0.999, t_max=0.9):
+def evaluate_torch(model, train_loader, test_loader, y_scores, n_generated=100000, alpha_min=0.9, alpha_max=0.999, t_max=0.9):
     """
     Evaluate the model using the EM and MV scores
     :param model: Model to evaluate
     :param train_loader: Training data
     :param test_loader: Test data
-    :param s_X: Scores of the test data (y_scores in the training)
+    :param y_scores: Scores of the test data
     :param n_generated: Number of generated samples
     :param alpha_min: Alpha minimum
     :param alpha_max: Alpha maximum
@@ -96,7 +96,8 @@ def evaluate_torch(model, train_loader, test_loader, s_X, n_generated=100000, al
     unif = torch.tensor(unif, dtype=torch.float32).to(device)
 
     # Compute the scores
-    s_unif = model.decision_function(unif)
+    s_X = model.decision_function(X_test, contamination=0.01, y_scores=y_scores)
+    s_unif = model.decision_function(unif, contamination=0.01)
     if len(s_X.shape) == 2:
         s_X = undo_sequences(s_X, seq_len)
         s_unif = undo_sequences(s_unif, seq_len)
