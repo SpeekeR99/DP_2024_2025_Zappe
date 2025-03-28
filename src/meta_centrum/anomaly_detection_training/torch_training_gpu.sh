@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -q gpu@pbs-m1.metacentrum.cz
-#PBS -l walltime=1:0:0
+#PBS -l walltime=12:0:0
 #PBS -l select=1:ncpus=1:ngpus=1:mem=32gb:scratch_local=64gb:cl_elbi1=False:cl_elmu1=False:cl_eluo1=False:cl_elum1=False:cl_elwe=False:cl_elmo5=False:cl_elmo4=False:cl_eltu=False:cl_elmo3=False:cl_elmo2=False:cl_elmo1=False
 #PBS -N anomaly_detection_gpu_torch_training
 
@@ -9,8 +9,8 @@
 # └─────────────────────────────────────────────────────────────────────────────────────────┘
 # Setup environment
 CONTAINER=/cvmfs/singularity.metacentrum.cz/NGC/PyTorch:25.02-py3.SIF
-# DATADIR=/storage/plzen1/home/zapped99/s3/a7/witching_days/keep/XEUR_2021_witching_days
-DATADIR=/storage/plzen1/home/zapped99/dp/mock_data
+DATADIR=/storage/plzen1/home/zapped99/s3/a7/witching_days/keep/XEUR_2021_witching_days
+# DATADIR=/storage/plzen1/home/zapped99/dp/mock_data
 PROJECT_DIR=/storage/plzen1/home/zapped99/dp
 API_KEY=$(cat $PROJECT_DIR/.wandb_api_key)
 JSON_TO_LOBSTER=src/data_preprocess/json-detailed2lobster.py
@@ -64,10 +64,11 @@ singularity run --nv $CONTAINER python3 $MAIN_SCRIPT --market_id $market_id --da
 # |            Save the results                                                             |
 # └─────────────────────────────────────────────────────────────────────────────────────────┘
 # Copy out the results
-mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
-cp -r res $PROJECT_DIR/DP_2024_2025_Zappe/res/$PBS_JOBID
-mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/models/$PBS_JOBID
-cp -r models $PROJECT_DIR/DP_2024_2025_Zappe/models/$PBS_JOBID
+CONFIG_STRING="${market_id}_${date}_${market_segment_id}_${security_id}_${model_type}_epochs_${epochs}_kfolds_${kfolds}_batch_size_${batch_size}_lr_${lr}_seq_len_${seq_len}_latent_dim_${latent_dim}"
+mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/res/${PBS_JOBID}_${CONFIG_STRING}
+cp -r res $PROJECT_DIR/DP_2024_2025_Zappe/res/${PBS_JOBID}_${CONFIG_STRING}
+mkdir -p $PROJECT_DIR/DP_2024_2025_Zappe/models/${PBS_JOBID}_${CONFIG_STRING}
+cp -r models $PROJECT_DIR/DP_2024_2025_Zappe/models/${PBS_JOBID}_${CONFIG_STRING}
 
 # ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 # |            Cleanup                                                                      |

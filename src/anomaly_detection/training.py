@@ -40,7 +40,7 @@ def train_model(model, data, config, kfolds=5, eval=True):
             name=f"{json.dumps(config)}_fold_{iter + 1}",
             project=WANDB_PROJECT,
             entity=WANDB_ENTITY,
-            tags=["pokus"],  # TODO: Remove this, when testing of wandb is done
+            tags=["Scikit_GS_1"],
             config=config
         )
 
@@ -127,7 +127,7 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
             name=f"{json.dumps(config)}_fold_{iter + 1}",
             project=WANDB_PROJECT,
             entity=WANDB_ENTITY,
-            tags=["pokus"],  # TODO: Remove this, when testing of wandb is done
+            tags=["Torch_GS_1"],
             config=config
         )
 
