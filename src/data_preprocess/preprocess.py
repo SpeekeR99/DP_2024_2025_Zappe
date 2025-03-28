@@ -1,3 +1,10 @@
+# ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+# | This code is NOT created by me                                                                                     |
+# | This code was created as a part of another thesis work                                                             |
+# | https://portal.zcu.cz/StagPortletsJSR168/CleanUrl?urlid=prohlizeni-prace-detail&praceIdno=97020                    |
+# |                                                                                                    - Dominik Zappe |
+# └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
 import pandas as pd
 import numpy as np
 import time

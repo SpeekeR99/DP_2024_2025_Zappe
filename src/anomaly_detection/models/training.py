@@ -36,7 +36,7 @@ def train_model(model, data, config, kfolds=5, eval=True):
     for iter, (train_index, test_index) in enumerate(kf.split(data)):
         print(f"Training fold {iter + 1} / {kfolds}")
         wandb.init(
-            group=json.dumps(config),
+            group=json.dumps(config)[:100],
             name=f"{json.dumps(config)}_fold_{iter + 1}",
             project=WANDB_PROJECT,
             entity=WANDB_ENTITY,
@@ -123,7 +123,7 @@ def train_torch_model(model, data_loader, config, num_epochs=10, lr=1e-5, kfolds
     for iter, (train_index, test_index) in enumerate(kf.split(data_loader.dataset.data)):
         print(f"Training fold {iter + 1} / {kfolds}")
         wandb.init(
-            group=json.dumps(config),
+            group=json.dumps(config)[:100],
             name=f"{json.dumps(config)}_fold_{iter + 1}",
             project=WANDB_PROJECT,
             entity=WANDB_ENTITY,

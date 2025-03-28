@@ -11,12 +11,12 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import wandb
 
-from src.anomaly_detection.dataloader import load_data
-from src.anomaly_detection.sequences import create_sequences, undo_sequences
-from src.anomaly_detection.training import train_torch_model
-from src.anomaly_detection.result_transform import transform_ys
-from src.anomaly_detection.results_file_io import store_results, load_results
-from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
+from src.anomaly_detection.data.dataloader import load_data
+from src.anomaly_detection.data.sequences import create_sequences, undo_sequences
+from src.anomaly_detection.models.training import train_torch_model
+from src.anomaly_detection.data.result_transform import transform_ys
+from src.anomaly_detection.data.results_file_io import store_results, load_results
+from src.anomaly_detection.analysis.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import WANTED_FEATURES, RANDOM_SEED_FOR_REPRODUCIBILITY, device
 
 

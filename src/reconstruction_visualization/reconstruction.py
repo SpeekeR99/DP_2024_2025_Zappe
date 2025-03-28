@@ -1,3 +1,11 @@
+# ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+# | This code is NOT created by me                                                                                     |
+# | I have been using this code, I have enhanced it a little bit, but it is not a main part of my thesis work          |
+# | This code was created as a part of another thesis work                                                             |
+# | https://portal.zcu.cz/StagPortletsJSR168/CleanUrl?urlid=prohlizeni-prace-detail&praceIdno=97020                    |
+# |                                                                                                    - Dominik Zappe |
+# └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
 import pandas as pd
 import numpy as np
 import datetime

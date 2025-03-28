@@ -1,3 +1,9 @@
+# ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+# | This code is experimental, where we tried to process the parsed pcap, it didn't work out so well                   |
+# | Instead .json files were used, see the json-detailed2lobster.py and augment_lobster.py files!                      |
+# |                                                                                                    - Dominik Zappe |
+# └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
 import json
 
 MARKET_ID = "XEUR"

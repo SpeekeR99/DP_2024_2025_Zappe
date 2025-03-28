@@ -2,9 +2,9 @@ import numpy as np
 import torch
 
 # https://github.com/ngoix/EMMV_benchmarks.git
-from lib.my_eval.em import em, mv
+from src.anomaly_detection.eval.em import em, mv
 
-from src.anomaly_detection.sequences import undo_sequences
+from src.anomaly_detection.data.sequences import undo_sequences
 from src.anomaly_detection.utils import device
 
 
