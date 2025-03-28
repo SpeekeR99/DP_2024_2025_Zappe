@@ -6,7 +6,7 @@ from sklearn.neighbors import LocalOutlierFactor
 from sklearn.svm import OneClassSVM
 from sklearn.datasets import load_iris
 # https://github.com/ngoix/EMMV_benchmarks.git
-from lib.my_eval.em import em, mv
+from src.anomaly_detection.eval.em import em, mv
 
 # This example is only an updated version of old example from https://github.com/ngoix/EMMV_benchmarks.git
 

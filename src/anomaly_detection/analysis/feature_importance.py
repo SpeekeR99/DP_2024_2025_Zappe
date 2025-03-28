@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
 
 import argparse
 
@@ -12,8 +12,8 @@ from sklearn.ensemble import IsolationForest
 # https://github.com/britojr/diffi.git
 from lib.diffi.diffi.diffi import diffi_score
 
-from src.anomaly_detection.dataloader import load_data
-from src.anomaly_detection.visuals import plot_feat_corr, plot_feat_imp
+from src.anomaly_detection.data.dataloader import load_data
+from src.anomaly_detection.analysis.visuals import plot_feat_corr, plot_feat_imp
 from src.anomaly_detection.utils import WANTED_FEATURES
 
 

@@ -46,7 +46,7 @@ cd ..
 # |            Venv (Singularity)                                                           |
 # └─────────────────────────────────────────────────────────────────────────────────────────┘
 # Prepare the container
-singularity run $CONTAINER pip3 install -r requirements_metacentrum.txt --user
+singularity run $CONTAINER pip3 install -r requirements.txt --user
 singularity run $CONTAINER python3 -m pip install --user wandb
 singularity run $CONTAINER python3 -m wandb login --relogin $API_KEY
 
