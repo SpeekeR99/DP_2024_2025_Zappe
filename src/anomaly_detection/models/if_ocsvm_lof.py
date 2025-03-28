@@ -14,7 +14,7 @@ from src.anomaly_detection.training import train_model
 from src.anomaly_detection.result_transform import transform_ys
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
-from src.anomaly_detection.utils import WANTED_FEATURES
+from src.anomaly_detection.utils import WANTED_FEATURES, RANDOM_SEED_FOR_REPRODUCIBILITY
 
 
 def main(config, data_file_info):
@@ -31,6 +31,11 @@ def main(config, data_file_info):
     # Load the config
     model_type = config["model_type"]
     kfolds = config["kfolds"]
+    n_estimators = config["n_estimators"]
+    max_samples = config["max_samples"]
+    max_features = config["max_features"]
+    gamma = config["gamma"]
+    n_neighbors = config["n_neighbors"]
 
     # Load the data
     print("Loading the data...")
@@ -44,12 +49,11 @@ def main(config, data_file_info):
     # Initialize the model
     print("Initializing the model...")
     if model_type == "if":
-        model = IsolationForest(contamination=0.01)
-        # model = IsolationForest(contamination=0.01, n_estimators=1000, max_samples=1.0, max_features=1.0)
+        model = IsolationForest(contamination=0.01, n_estimators=n_estimators, max_samples=max_samples, max_features=max_features, random_state=RANDOM_SEED_FOR_REPRODUCIBILITY)
     elif model_type == "ocsvm":
-        model = OneClassSVM(kernel="rbf", gamma="scale")
+        model = OneClassSVM(kernel="rbf", nu=0.01, gamma=gamma)
     elif model_type == "lof":
-        model = LocalOutlierFactor(n_neighbors=32, contamination=0.01, novelty=True)
+        model = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=0.01, novelty=True)
 
     # Train the model
     print("Training the model...")
@@ -99,6 +103,11 @@ if __name__ == "__main__":
 
     parser.add_argument("--model_type", type=str, default="if")
     parser.add_argument("--kfolds", type=int, default=5)
+    parser.add_argument("--n_estimators", type=int, default=100)
+    parser.add_argument("--max_samples", type=str, default="auto")
+    parser.add_argument("--max_features", type=float, default=1.0)
+    parser.add_argument("--gamma", type=str, default="scale")
+    parser.add_argument("--n_neighbors", type=int, default=32)
 
     args = parser.parse_args()
 
@@ -112,6 +121,12 @@ if __name__ == "__main__":
     config = {
         "model_type": args.model_type,
         "kfolds": args.kfolds,
+        "n_estimators": args.n_estimators,
+        # Max samples can be string "auto" or float or int ...
+        "max_samples": args.max_samples if args.max_samples == "auto" else float(args.max_samples) if "." in args.max_samples else int(args.max_samples),
+        "max_features": args.max_features,
+        "gamma": args.gamma,
+        "n_neighbors": args.n_neighbors
     }
 
     main(config, data_file_info)

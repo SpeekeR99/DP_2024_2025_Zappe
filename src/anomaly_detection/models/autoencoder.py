@@ -17,7 +17,7 @@ from src.anomaly_detection.training import train_torch_model
 from src.anomaly_detection.result_transform import transform_ys
 from src.anomaly_detection.results_file_io import store_results, load_results
 from src.anomaly_detection.visuals import plot_anomalies, plot_eval_res
-from src.anomaly_detection.utils import WANTED_FEATURES, device
+from src.anomaly_detection.utils import WANTED_FEATURES, RANDOM_SEED_FOR_REPRODUCIBILITY, device
 
 
 class BaseAutoencoder(nn.Module):
@@ -470,5 +470,9 @@ if __name__ == "__main__":
         "seq_len": args.seq_len,
         "latent_dim": args.latent_dim
     }
+
+    # Fixation of all the random seeds (for reproducibility)
+    torch.manual_seed(RANDOM_SEED_FOR_REPRODUCIBILITY)
+    np.random.seed(RANDOM_SEED_FOR_REPRODUCIBILITY)
 
     main(config, data_file_info)

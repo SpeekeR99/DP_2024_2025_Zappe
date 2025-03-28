@@ -17,4 +17,5 @@ WANTED_FEATURES = [
 ]
 WANDB_ENTITY = "thebigbook"
 WANDB_PROJECT = "anomaly_detection_DP_2025_zappe_dominik"
+RANDOM_SEED_FOR_REPRODUCIBILITY = 42
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
