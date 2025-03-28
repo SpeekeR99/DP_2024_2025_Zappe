@@ -255,6 +255,6 @@ if __name__ == "__main__":
     # MARKET_SEGMENT_ID = 688
     # SECURITY_ID = 4128839
     DATE = "20210319"
-    MARKET_SEGMENT_ID = "589"
-    SECURITY_ID = "5594748"
+    MARKET_SEGMENT_ID = "688"
+    SECURITY_ID = "5578483"
     plot_basic_dimensional_vis(DATE, MARKET_SEGMENT_ID, SECURITY_ID)
