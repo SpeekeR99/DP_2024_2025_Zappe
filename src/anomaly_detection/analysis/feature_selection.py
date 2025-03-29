@@ -8,12 +8,14 @@ import argparse
 import os
 import pickle
 import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.ensemble import IsolationForest
 # https://github.com/britojr/diffi.git
 from lib.diffi.diffi.diffi import diffi_score
 
 from src.anomaly_detection.data.dataloader import load_data
-from src.anomaly_detection.analysis.visuals import plot_feat_corr, plot_feat_imp
+from src.anomaly_detection.analysis.visuals import plot_feat_corr, plot_pareto, plot_loadings, plot_feat_imp
 from src.anomaly_detection.utils import WANTED_FEATURES
 
 
@@ -36,6 +38,17 @@ def main(data_file_info):
     # Correlation analysis
     corr_mat = data.corr()
     plot_feat_corr(DATE, MARKET_SEGMENT_ID, SECURITY_ID, corr_mat)
+
+    # PCA analysis
+    scaler = StandardScaler()
+    data_numpy_scaled = scaler.fit_transform(data_numpy)
+
+    pca = PCA(n_components=data_numpy_scaled.shape[1])
+    pca.fit_transform(data_numpy_scaled)
+
+    # Plot PCA
+    plot_pareto(DATE, MARKET_SEGMENT_ID, SECURITY_ID, pca)
+    plot_loadings(DATE, MARKET_SEGMENT_ID, SECURITY_ID, pca, data)
 
     # Initialize the models
     model = IsolationForest(contamination=0.01)
