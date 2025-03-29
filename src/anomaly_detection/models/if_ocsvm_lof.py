@@ -9,7 +9,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.svm import OneClassSVM
 from sklearn.neighbors import LocalOutlierFactor
 
-from src.anomaly_detection.data.dataloader import load_data
+from src.anomaly_detection.data.dataloader import load_data, load_data_reduced_dimensions
 from src.anomaly_detection.models.training import train_model
 from src.anomaly_detection.data.result_transform import transform_ys
 from src.anomaly_detection.data.results_file_io import store_results, load_results
@@ -39,7 +39,7 @@ def main(config, data_file_info):
 
     # Load the data
     print("Loading the data...")
-    data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
     # data = data.head(1000)
 
