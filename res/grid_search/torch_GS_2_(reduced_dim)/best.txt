@@ -12,4 +12,4 @@ seq_len       = 64
 Transformer:
 batch_size    = 32
 learning_rate = 1e-4
-seq_len       = 32
+seq_len       = 64
