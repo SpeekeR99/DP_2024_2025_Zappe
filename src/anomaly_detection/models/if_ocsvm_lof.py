@@ -17,11 +17,12 @@ from src.anomaly_detection.analysis.visuals import plot_anomalies, plot_eval_res
 from src.anomaly_detection.utils import WANTED_FEATURES, RANDOM_SEED_FOR_REPRODUCIBILITY
 
 
-def main(config, data_file_info):
+def main(config, data_file_info, seed):
     """
     Main function
     :param config: Configuration of the model
     :param data_file_info: Information about the data file
+    :param seed: Seed for reproducibility
     """
     # Load the data file information
     DATE = data_file_info["date"]
@@ -39,7 +40,8 @@ def main(config, data_file_info):
 
     # Load the data
     print("Loading the data...")
-    data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    # data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
     # data = data.head(1000)
 
@@ -49,7 +51,7 @@ def main(config, data_file_info):
     # Initialize the model
     print("Initializing the model...")
     if model_type == "if":
-        model = IsolationForest(contamination=0.01, n_estimators=n_estimators, max_samples=max_samples, max_features=max_features, random_state=RANDOM_SEED_FOR_REPRODUCIBILITY)
+        model = IsolationForest(contamination=0.01, n_estimators=n_estimators, max_samples=max_samples, max_features=max_features, random_state=seed)
     elif model_type == "ocsvm":
         model = OneClassSVM(kernel="rbf", nu=0.01, gamma=gamma)
     elif model_type == "lof":
@@ -108,6 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_features", type=float, default=1.0)
     parser.add_argument("--gamma", type=str, default="scale")
     parser.add_argument("--n_neighbors", type=int, default=32)
+    parser.add_argument("--seed", type=int, default=RANDOM_SEED_FOR_REPRODUCIBILITY)
 
     args = parser.parse_args()
 
@@ -129,4 +132,6 @@ if __name__ == "__main__":
         "n_neighbors": args.n_neighbors
     }
 
-    main(config, data_file_info)
+    seed = args.seed
+
+    main(config, data_file_info, seed)
