@@ -1,8 +1,8 @@
 #!/bin/bash
 #PBS -q default@pbs-m1.metacentrum.cz
 #PBS -l walltime=12:0:0
-#PBS -l select=1:ncpus=1:mem=32gb:scratch_local=64gb:cl_elbi1=False:cl_elmu1=False:cl_eluo1=False:cl_elum1=False:cl_elwe=False:cl_elmo5=False:cl_elmo4=False:cl_eltu=False:cl_elmo3=False:cl_elmo2=False:cl_elmo1=False
-#PBS -N anomaly_detection_scikit_training
+#PBS -l select=1:ncpus=1:mem=64gb:scratch_local=96gb:cl_elbi1=False:cl_elmu1=False:cl_eluo1=False:cl_elum1=False:cl_elwe=False:cl_elmo5=False:cl_elmo4=False:cl_eltu=False:cl_elmo3=False:cl_elmo2=False:cl_elmo1=False
+#PBS -N best_model_anomaly_detection_scikit_training
 
 # ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 # |            Variables                                                                    |
@@ -58,7 +58,11 @@ singularity run $CONTAINER python3 $JSON_TO_LOBSTER $market_id $date $market_seg
 singularity run $CONTAINER python3 $AUGMENT_LOBSTER $market_id $date $market_segment_id $security_id
 
 # Run the Python script
-singularity run $CONTAINER python3 $MAIN_SCRIPT --market_id $market_id --date $date --market_segment_id $market_segment_id --security_id $security_id --model_type $model_type --kfolds $kfolds --n_estimators $n_estimators --max_samples $max_samples --max_features $max_features --gamma $gamma --n_neighbors $n_neighbors
+if [ -z ${seed+x} ]; then  # If the seed is not set
+    singularity run $CONTAINER python3 $MAIN_SCRIPT --market_id $market_id --date $date --market_segment_id $market_segment_id --security_id $security_id --model_type $model_type --kfolds $kfolds --n_estimators $n_estimators --max_samples $max_samples --max_features $max_features --gamma $gamma --n_neighbors $n_neighbors
+else  # If the seed is set
+    singularity run $CONTAINER python3 $MAIN_SCRIPT --market_id $market_id --date $date --market_segment_id $market_segment_id --security_id $security_id --model_type $model_type --kfolds $kfolds --n_estimators $n_estimators --max_samples $max_samples --max_features $max_features --gamma $gamma --n_neighbors $n_neighbors --seed $seed
+fi
 
 # ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 # |            Save the results                                                             |

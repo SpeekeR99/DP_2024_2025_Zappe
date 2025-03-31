@@ -363,7 +363,8 @@ def main(config, data_file_info):
 
     # Load the data
     print("Loading the data...")
-    data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    # data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
     # data = data.head(1000)
 
@@ -451,6 +452,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seq_len", type=int, default=64)
     parser.add_argument("--latent_dim", type=int, default=4)
+    parser.add_argument("--seed", type=int, default=RANDOM_SEED_FOR_REPRODUCIBILITY)
 
     args = parser.parse_args()
 
@@ -471,8 +473,10 @@ if __name__ == "__main__":
         "latent_dim": args.latent_dim
     }
 
+    seed = args.seed
+
     # Fixation of all the random seeds (for reproducibility)
-    torch.manual_seed(RANDOM_SEED_FOR_REPRODUCIBILITY)
-    np.random.seed(RANDOM_SEED_FOR_REPRODUCIBILITY)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
     main(config, data_file_info)
