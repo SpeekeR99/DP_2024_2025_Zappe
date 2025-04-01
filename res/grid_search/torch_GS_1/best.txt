@@ -7,9 +7,9 @@ CNN:
 batch_size    = 32
 learning_rate = 1e-3
 latent_dim    = 8
-seq_len       = 128
+seq_len       = 64
 
 Transformer:
 batch_size    = 16/64
 learning_rate = 1e-4
-seq_len       = 128/32
+seq_len       = 64/32
