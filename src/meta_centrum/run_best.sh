@@ -43,9 +43,9 @@ cnn_batch_size=32
 cnn_lr=0.001
 cnn_latent_dim=8
 cnn_seq_len=64
- transformer_batch_size=64
- transformer_lr=0.0001
- transformer_seq_len=32
+transformer_batch_size=64
+transformer_lr=0.0001
+transformer_seq_len=32
 # Model specific HP's (Grid Search 2 results -> Reduced Dimensionality)
 # if_n_estimators=100
 # if_max_samples=0.1
