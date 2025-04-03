@@ -10,6 +10,6 @@ latent_dim    = 8
 seq_len       = 64
 
 Transformer:
-batch_size    = 16/64
+batch_size    = 64
 learning_rate = 1e-4
-seq_len       = 64/32
+seq_len       = 32
