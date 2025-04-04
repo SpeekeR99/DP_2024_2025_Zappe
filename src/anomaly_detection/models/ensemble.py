@@ -27,6 +27,7 @@ def main(config, data_file_info):
     # Load the data
     print("Loading the data...")
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    # data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
     # Take smaller subset of the data (for local computer speed purposes)
     # data = data.head(1000)
 
@@ -90,12 +91,12 @@ def main(config, data_file_info):
     axis_alpha = axis_alphas[0]
     amax = max(amaxes)
 
-    # # Plot the evaluation results
-    # plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
-    #
-    # # Plot the anomalies
-    # for model_name, short_model_name, y_pred, anomaly_proba in zip(model_names, short_model_names, y_preds, anomaly_probas):
-    #     plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+    # Plot the evaluation results
+    plot_eval_res(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax)
+
+    # Plot the anomalies
+    for model_name, short_model_name, y_pred, anomaly_proba in zip(model_names, short_model_names, y_preds, anomaly_probas):
+        plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
 
     # Ensemble -- average model of picked models
     model_name = f"Ensemble ({', '.join(model_names)})"
@@ -149,9 +150,9 @@ if __name__ == "__main__":
     parser.add_argument("--cnn_seq_len", type=int, default=64)
     parser.add_argument("--no_cnn", type=str, default="false")
 
-    parser.add_argument("--transformer_batch_size", type=int, default=16)  # or 64
+    parser.add_argument("--transformer_batch_size", type=int, default=64)
     parser.add_argument("--transformer_lr", type=float, default=1e-4)
-    parser.add_argument("--transformer_seq_len", type=int, default=64)  # or 32
+    parser.add_argument("--transformer_seq_len", type=int, default=32)
     parser.add_argument("--no_transformer", type=str, default="false")
 
     args = parser.parse_args()
