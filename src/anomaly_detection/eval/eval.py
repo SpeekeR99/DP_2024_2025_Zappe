@@ -81,7 +81,7 @@ def evaluate_torch(model, train_loader, test_loader, y_scores, n_generated=10000
         lim_inf = torch.amin(X_test, dim=(0, 2))
         lim_sup = torch.amax(X_test, dim=(0, 2))
     epsilon = 1e-4  # To avoid division by zero
-    volume_support = (lim_sup - lim_inf + epsilon).prod()
+    volume_support = (lim_sup - lim_inf + epsilon).prod().cpu().numpy()
 
     # Compute the time and alpha axis
     t = np.linspace(0, 100 / volume_support, n_generated)
