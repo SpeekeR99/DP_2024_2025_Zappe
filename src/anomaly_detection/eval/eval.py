@@ -26,6 +26,8 @@ def evaluate(model, data_train, data_test, n_generated=100000, alpha_min=0.9, al
     lim_inf = data_test.min(axis=0)
     lim_sup = data_test.max(axis=0)
     epsilon = 1e-4  # To avoid division by zero
+    lim_inf = np.nan_to_num(lim_inf, nan=0.0, posinf=0.0, neginf=0.0)
+    lim_sup = np.nan_to_num(lim_sup, nan=0.0, posinf=0.0, neginf=0.0)
     volume_support = (lim_sup - lim_inf + epsilon).prod()
 
     # Compute the time and alpha axis
@@ -81,6 +83,8 @@ def evaluate_torch(model, train_loader, test_loader, y_scores, n_generated=10000
         lim_inf = torch.amin(X_test, dim=(0, 2))
         lim_sup = torch.amax(X_test, dim=(0, 2))
     epsilon = 1e-4  # To avoid division by zero
+    lim_inf = np.nan_to_num(lim_inf.cpu().numpy(), nan=0.0, posinf=0.0, neginf=0.0)
+    lim_sup = np.nan_to_num(lim_sup.cpu().numpy(), nan=0.0, posinf=0.0, neginf=0.0)
     volume_support = (lim_sup - lim_inf + epsilon).prod().cpu().numpy()
 
     # Compute the time and alpha axis
@@ -88,10 +92,14 @@ def evaluate_torch(model, train_loader, test_loader, y_scores, n_generated=10000
     axis_alpha = np.arange(alpha_min, alpha_max, 0.0001)
     # Generate uniform samples
     if len(X_train.shape) == 2:
-        unif = np.random.uniform(lim_inf.cpu().numpy(), lim_sup.cpu().numpy(), size=(n_generated, n_features))
+        lim_inf = np.nan_to_num(lim_inf, nan=-epsilon)
+        lim_sup = np.nan_to_num(lim_sup, nan=epsilon)
+        unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, n_features))
     else:  # X_trian.shape[2] == seq_len
-        lim_inf_expanded = np.repeat(lim_inf.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
-        lim_sup_expanded = np.repeat(lim_sup.cpu().numpy()[:, np.newaxis], seq_len, axis=1)
+        lim_inf_expanded = np.repeat(lim_inf[:, np.newaxis], seq_len, axis=1)
+        lim_sup_expanded = np.repeat(lim_sup[:, np.newaxis], seq_len, axis=1)
+        lim_inf_expanded = np.nan_to_num(lim_inf_expanded, nan=-epsilon)
+        lim_sup_expanded = np.nan_to_num(lim_sup_expanded, nan=epsilon)
         unif = np.random.uniform(lim_inf_expanded, lim_sup_expanded, size=(n_generated, n_features, seq_len))
     unif = torch.tensor(unif, dtype=torch.float32).to(device)
 
