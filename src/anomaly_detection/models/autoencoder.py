@@ -375,6 +375,7 @@ def main(config, data_file_info):
     # Transform data to PyTorch tensors and normalize the data
     data_tensor = torch.tensor(data_numpy, dtype=torch.float32)
     data_tensor = (data_tensor - data_tensor.mean(dim=0)) / data_tensor.std(dim=0)  # Normalize the datas
+    data_tensor = data_tensor.nan_to_num(nan=0.0, posinf=0.0, neginf=0.0)  # Replace NaN with 0.0
     if model_type == "ffnn":  # FFNN does not need sequences
         data_tensor = data_tensor.to(device)
     else:  # CNN/Transformer needs sequences
