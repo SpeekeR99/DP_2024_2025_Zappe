@@ -27,7 +27,9 @@ def main(config, data_file_info):
     # Load the data
     print("Loading the data...")
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    features = WANTED_FEATURES
     # data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    # features = data.columns.tolist()
     # Take smaller subset of the data (for local computer speed purposes)
     # data = data.head(1000)
 
@@ -72,6 +74,11 @@ def main(config, data_file_info):
     amaxes = []
     for config in configs:
         y_pred, y_score, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
+        if len(y_score) != len(data_numpy):
+            print(f"Warning: The length of the scores ({len(y_score)}) does not match the length of the data ({len(data_numpy)}).")
+            y_pred = y_pred[:len(data_numpy)]
+            y_score = y_score[:len(data_numpy)]
+            anomaly_proba = anomaly_proba[:len(data_numpy)]
         y_preds.append(y_pred)
         y_scores.append(y_score)
         anomaly_probas.append(anomaly_proba)
@@ -86,7 +93,7 @@ def main(config, data_file_info):
     # Prepare data for plots
     print("Plotting the results...")
     time_idx = data.columns.get_loc("Time")
-    indcs = [data.columns.get_loc(feature) for feature in WANTED_FEATURES[1:]]  # Skip the "Time" column
+    indcs = [data.columns.get_loc(feature) for feature in features[1:]]  # Skip the "Time" column
     t = ts[0]
     axis_alpha = axis_alphas[0]
     amax = max(amaxes)
@@ -96,7 +103,7 @@ def main(config, data_file_info):
 
     # Plot the anomalies
     for model_name, short_model_name, y_pred, anomaly_proba in zip(model_names, short_model_names, y_preds, anomaly_probas):
-        plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred, anomaly_proba, WANTED_FEATURES[1:])
+        plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred, anomaly_proba, features[1:])
 
     # Ensemble -- average model of picked models
     model_name = f"Ensemble ({', '.join(model_names)})"
@@ -114,16 +121,16 @@ def main(config, data_file_info):
     y_pred_ensemble, anomaly_proba_ensemble = transform_ys(y_scores_ensemble, contamination=0.01, lower_is_better=True)
 
     # Plot the anomalies
-    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred_ensemble, anomaly_proba_ensemble, WANTED_FEATURES[1:])
+    plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred_ensemble, anomaly_proba_ensemble, features[1:])
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--market_id", type=str, default="XEUR")
-    parser.add_argument("--date", type=str, default="20210319")
-    parser.add_argument("--market_segment_id", type=str, default="589")
-    parser.add_argument("--security_id", type=str, default="5594748")
+    parser.add_argument("--date", type=str, default="20191202")
+    parser.add_argument("--market_segment_id", type=str, default="688")
+    parser.add_argument("--security_id", type=str, default="4128839")
 
     parser.add_argument("--epochs", type=int, default=500)
     parser.add_argument("--kfolds", type=int, default=5)
