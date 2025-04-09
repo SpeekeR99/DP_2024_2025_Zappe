@@ -112,8 +112,10 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
     # Normalize the alpha to [0, 1]
     anomaly_alpha = (anomaly_alpha - anomaly_alpha.min()) / (anomaly_alpha.max() - anomaly_alpha.min())
 
-    if len(anomaly_alpha) > 500_000:
-        anomaly_alpha *= 0.1 # Reduce the alpha for better visualization
+    if len(time_data) > 500_000:
+        anomaly_alpha *= 0.1  # Reduce the alpha for better visualization
+    if len(time_data) > 1_000_000:
+        anomaly_alpha *= 0.5  # Reduce the alpha even more
 
     # Plot the anomalies for each feature
     for i, index in enumerate(indcs):
