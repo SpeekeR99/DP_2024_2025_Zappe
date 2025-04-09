@@ -118,7 +118,34 @@ def main(config, data_file_info):
 
     # Create the ensemble model by averaging the normalized scores
     y_scores_ensemble = np.mean(y_scores, axis=0)
+    # # ------- Weighted average ---------------------------------------------------------------------------------------
+    # # This code is unused, because the weighted average results are very similar to the normal average
+    # # Create the ensemble model by weighted averaging the normalized scores
+    # # Rank the models based on their EM and MV values separately
+    # em_rankings = np.argsort(em_vals)[::-1]  # Best EM is high
+    # mv_rankings = np.argsort(mv_vals)  # Best MV is low
+    # points = {}
+    # for i, model_name in enumerate(model_names):
+    #     points[model_name] = 0
+    #     points[model_name] += (len(model_names) - em_rankings[i] + len(model_names) - mv_rankings[i]) / 2.0
+    # # Normalize the points
+    # points = {k: v / sum(points.values()) for k, v in points.items()}
+    # # Create the ensemble model by weighted averaging the normalized scores
+    # y_scores_ensemble = np.zeros_like(y_scores[0])
+    # for i, model_name in enumerate(model_names):
+    #     y_scores_ensemble += points[model_name] * y_scores[i]
+    # # ------- Weighted average ---------------------------------------------------------------------------------------
     y_pred_ensemble, anomaly_proba_ensemble = transform_ys(y_scores_ensemble, contamination=0.01, lower_is_better=True)
+
+    # # ------- Thresholding ------------------------------------------------------------------------------------------
+    # # Threshold the ensemble model to only keep the MOST sure predictions of anomalies
+    # # Keep only the predictions, that are 75 % sure or more
+    # model_name = f"Ensemble ({', '.join(model_names)}) (only top predictions)"
+    # short_model_name = f"Ensemble_top_{'_'.join(short_model_names)}"
+    # threshold = 0.75
+    # y_pred_ensemble[anomaly_proba_ensemble < threshold] = 1
+    # anomaly_proba_ensemble[anomaly_proba_ensemble < threshold] = 0
+    # # ------- Thresholding -------------------------------------------------------------------------------------------
 
     # Plot the anomalies
     plot_anomalies(DATE, MARKET_SEGMENT_ID, SECURITY_ID, model_name, short_model_name, data_numpy, time_idx, indcs, y_pred_ensemble, anomaly_proba_ensemble, features[1:])
