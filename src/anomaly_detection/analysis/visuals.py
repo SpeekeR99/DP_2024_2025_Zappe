@@ -147,7 +147,7 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
         plt.grid()
 
         plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{short_model_name}_{feature}.png")
-        # plt.show()
+        plt.show()
 
 
 def plot_feat_corr(date, market_segment_id, security_id, corr_matrix):
