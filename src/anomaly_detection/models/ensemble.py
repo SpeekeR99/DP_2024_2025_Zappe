@@ -142,7 +142,7 @@ def main(config, data_file_info):
     # # Keep only the predictions, that are 75 % sure or more
     # model_name = f"Ensemble ({', '.join(model_names)}) (only top predictions)"
     # short_model_name = f"Ensemble_top_{'_'.join(short_model_names)}"
-    # threshold = 0.75
+    # threshold = np.percentile(y_scores_ensemble, 99.9)
     # y_pred_ensemble[anomaly_proba_ensemble < threshold] = 1
     # anomaly_proba_ensemble[anomaly_proba_ensemble < threshold] = 0
     # # ------- Thresholding -------------------------------------------------------------------------------------------
@@ -174,19 +174,24 @@ if __name__ == "__main__":
     parser.add_argument("--no_lof", type=str, default="false")
 
     parser.add_argument("--ffnn_batch_size", type=int, default=32)
+    # parser.add_argument("--ffnn_batch_size", type=int, default=16)  # Reduced dims
     parser.add_argument("--ffnn_lr", type=float, default=1e-3)
     parser.add_argument("--ffnn_latent_dim", type=int, default=8)
+    # parser.add_argument("--ffnn_latent_dim", type=int, default=4)  # Reduced dims
     parser.add_argument("--no_ffnn", type=str, default="false")
 
     parser.add_argument("--cnn_batch_size", type=int, default=32)
     parser.add_argument("--cnn_lr", type=float, default=1e-3)
     parser.add_argument("--cnn_latent_dim", type=int, default=8)
+    # parser.add_argument("--cnn_latent_dim", type=int, default=4)  # Reduced dims
     parser.add_argument("--cnn_seq_len", type=int, default=64)
     parser.add_argument("--no_cnn", type=str, default="false")
 
     parser.add_argument("--transformer_batch_size", type=int, default=64)
+    # parser.add_argument("--transformer_batch_size", type=int, default=32)  # Reduced dims
     parser.add_argument("--transformer_lr", type=float, default=1e-4)
     parser.add_argument("--transformer_seq_len", type=int, default=32)
+    # parser.add_argument("--transformer_seq_len", type=int, default=64)  # Reduced dims
     parser.add_argument("--no_transformer", type=str, default="false")
 
     args = parser.parse_args()

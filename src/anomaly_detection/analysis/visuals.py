@@ -111,6 +111,8 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
     anomaly_alpha = anomaly_proba[y_pred == -1]
     # Normalize the alpha to [0, 1]
     anomaly_alpha = (anomaly_alpha - anomaly_alpha.min()) / (anomaly_alpha.max() - anomaly_alpha.min())
+    # Replace NaN values with 0
+    anomaly_alpha = np.nan_to_num(anomaly_alpha)
 
     if len(time_data) > 500_000:
         anomaly_alpha *= 0.1  # Reduce the alpha for better visualization
@@ -145,7 +147,7 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
         plt.grid()
 
         plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{short_model_name}_{feature}.png")
-        plt.show()
+        # plt.show()
 
 
 def plot_feat_corr(date, market_segment_id, security_id, corr_matrix):
