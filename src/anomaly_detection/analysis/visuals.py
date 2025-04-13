@@ -340,10 +340,7 @@ def plot_loadings(date, market_segment_id, security_id, pca, df):
 
 
 if __name__ == "__main__":
-    # DATE = 20191202
-    # MARKET_SEGMENT_ID = 688
-    # SECURITY_ID = 4128839
-    DATE = "20210319"
+    DATE = "20191202"
     MARKET_SEGMENT_ID = "688"
-    SECURITY_ID = "5578483"
+    SECURITY_ID = "4128839"
     plot_basic_dimensional_vis(DATE, MARKET_SEGMENT_ID, SECURITY_ID)

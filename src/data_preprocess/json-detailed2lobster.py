@@ -4,9 +4,9 @@ import time
 import csv
 
 MARKET_ID = "XEUR"
-DATE = "20210319"
+DATE = "20191202"
 MARKET_SEGMENT_ID = "688"
-SECURITY_ID = "5578483"
+SECURITY_ID = "4128839"
 
 if len(sys.argv) == 5:
     MARKET_ID = sys.argv[1]
