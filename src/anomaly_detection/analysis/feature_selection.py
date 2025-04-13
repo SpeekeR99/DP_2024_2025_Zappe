@@ -99,9 +99,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--market_id", type=str, default="XEUR")
-    parser.add_argument("--date", type=str, default="20210319")
+    parser.add_argument("--date", type=str, default="20191202")
     parser.add_argument("--market_segment_id", type=str, default="688")
-    parser.add_argument("--security_id", type=str, default="5578483")
+    parser.add_argument("--security_id", type=str, default="4128839")
 
     args = parser.parse_args()
 
