@@ -435,6 +435,7 @@ def main():
     timestamps_graph = list(range(len(timestamps_graph_labels)))
     # Tick every 10000 timestamps
     tickvals = list(range(0, len(timestamps), 10000))
+    # tickvals = list(range(0, len(timestamps), 25000))
     ticklabels = [timestamps_graph_labels[i] for i in tickvals]
     # Go from HH:MM:SS.nnnnnn to truly HH:MM:SS
     ticklabels = [ts[:8] for ts in ticklabels]
@@ -545,6 +546,15 @@ def main():
         yaxis3={'title': 'Incoming messages (per sec)', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
         yaxis4={'title': 'Cancellations rate', 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True},
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+        # ----- For thesis images export -----
+        # title={"text": '', "font": {"size": 48}},
+        # xaxis={'title': {'text': 'Timestamp', 'font': {'size': 36}}, "tickmode": "array", "tickvals": tickvals, "ticktext": ticklabels, "tickfont": {"size": 32}},
+        # yaxis={'title': {'text': 'Price', 'font': {'size': 36}}, 'side': 'left', "tickfont": {"size": 32}},
+        # yaxis2={'title': {'text': 'Imbalance index', 'font': {'size': 36}}, 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True, "range": [-1, 1], "tickfont": {"size": 32}},
+        # yaxis3={'title': {'text': 'Incoming messages (per sec)', 'font': {'size': 36}}, 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True, "tickfont": {"size": 32}},
+        # yaxis4={'title': {'text': 'Cancellations rate', 'font': {'size': 36}}, 'side': 'right', 'overlaying': 'y', "anchor": "free", "autoshift": True, "tickfont": {"size": 32}},
+        # legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1, "font": {"size": 32}},
+        # ----- For thesis images export -----
         clickmode='event+select',
         hovermode="x unified"
     )
@@ -593,7 +603,16 @@ def main():
             dcc.Loading(
             dcc.Graph(
                 id="price_graph",
-                figure=price_graph_fig
+                figure=price_graph_fig,
+                config={
+                    'toImageButtonOptions': {
+                        'format': 'png',
+                        'filename': 'price_graph',
+                        "width": 1920,
+                        "height": 1080,
+                        'scale': 3
+                    }
+                }
             ), type="circle")
         ], style={
             "display": "block",
