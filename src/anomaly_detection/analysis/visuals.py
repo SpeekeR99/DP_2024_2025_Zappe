@@ -11,6 +11,18 @@ import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 from matplotlib.lines import Line2D
+from adjustText import adjust_text  # Jittering
+# For export purposes -- bigger fonts
+# import matplotlib as mpl
+# mpl.rcParams.update({
+#     "font.size": 26,
+#     "axes.titlesize": 32,
+#     "axes.labelsize": 30,
+#     "xtick.labelsize": 24,
+#     "ytick.labelsize": 24,
+#     "legend.fontsize": 24,
+#     "figure.titlesize": 36,
+# })
 
 
 def plot_eval_res(date, market_segment_id, security_id, model_names, short_model_names, em_vals, mv_vals, em_curves, mv_curves, t, axis_alpha, amax):
@@ -69,12 +81,13 @@ def plot_eval_res(date, market_segment_id, security_id, model_names, short_model
         plt.title("Mass-Volume (MV) curves")
         plt.legend()
         plt.grid()
+        plt.tight_layout()
 
         file_name = "_".join(short_model_names)
         if i != 0:
-            plt.savefig(f"img/eval/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval_log.png")
+            plt.savefig(f"img/eval/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval_log.png", dpi=300, bbox_inches='tight')
         else:
-            plt.savefig(f"img/eval/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval.png")
+            plt.savefig(f"img/eval/{date}_{market_segment_id}_{security_id}/{file_name}_EM_MV_eval.png", dpi=300, bbox_inches='tight')
         plt.show()
 
 
@@ -145,8 +158,9 @@ def plot_anomalies(date, market_segment_id, security_id, model_name, short_model
         plt.legend(handles=[normal_patch, anomaly_patch])
 
         plt.grid()
+        plt.tight_layout()
 
-        plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{short_model_name}_{feature}.png")
+        plt.savefig(f"img/anomaly_detections/{date}_{market_segment_id}_{security_id}/{short_model_name}_{feature}.png", dpi=300, bbox_inches='tight')
         plt.show()
 
 
@@ -175,6 +189,7 @@ def plot_feat_corr(date, market_segment_id, security_id, corr_matrix):
     labels = corr_matrix.index
     for (i, j), z in np.ndenumerate(corr_matrix):
         ax.text(j, i, "{:0.1f}".format(z), ha="center", va="center", fontsize=10)
+        # ax.text(j, i, "{:0.1f}".format(z), ha="center", va="center", fontsize=20)  # LaTeX export purposes
 
     # Set ticks
     ax.set_xticks(np.arange(len(labels)))
@@ -187,7 +202,9 @@ def plot_feat_corr(date, market_segment_id, security_id, corr_matrix):
     ax.set_ylabel("Feature")
     ax.set_title("Feature Correlation")
 
-    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/feature_correlation.png")
+    plt.tight_layout()
+
+    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/feature_correlation.png", dpi=300, bbox_inches='tight')
     plt.show()
 
 
@@ -215,8 +232,9 @@ def plot_feat_imp(date, market_segment_id, security_id, feature_importance_dict,
     plt.title("Feature Importance")
 
     plt.grid()
+    plt.tight_layout()
 
-    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/feature_importance.png")
+    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/feature_importance.png", dpi=300, bbox_inches='tight')
     plt.show()
 
 
@@ -259,7 +277,8 @@ def plot_basic_dimensional_vis(date, market_segment_id, security_id):
         plt.xticks(rotation=22.5, ha='right')
 
         plt.grid()
-        plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/{column}.png")
+        plt.tight_layout()
+        plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/{column}.png", dpi=300, bbox_inches='tight')
         plt.show()
 
 
@@ -299,7 +318,8 @@ def plot_pareto(date, market_segment_id, security_id, pca):
     ax.legend(handles=[bar_patch, line_patch], loc="best")
 
     plt.grid()
-    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/PCA_pareto.png")
+    plt.tight_layout()
+    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/PCA_pareto.png", dpi=300, bbox_inches='tight')
     plt.show()
 
 
@@ -320,22 +340,27 @@ def plot_loadings(date, market_segment_id, security_id, pca, df):
     features = df.columns
     colors = plt.cm.rainbow(np.linspace(0, 1, len(features)))
 
+    texts = []
     for i, (feature, color) in enumerate(zip(features, colors)):
         # Plot arrows with different colors
         ax.arrow(0, 0, loadings[0, i], loadings[1, i], head_width=0.02, head_length=0.05, fc=color, ec=color)
-        # ax.text(loadings[0, i], loadings[1, i], feature, color="k", ha="center", va="center")  # + Jitter
-        ax.text(loadings[0, i] + np.random.normal(0, 0.02), loadings[1, i] + np.random.normal(0, 0.02), feature, color="k", ha="center", va="center")
+        text = ax.text(loadings[0, i], loadings[1, i], feature, color="k", ha="center", va="center")
+        texts.append(text)
+    adjust_text(texts)  # Jittering basically
 
     # Create legend
     patches = [mpatches.Patch(color=color, label=feature) for feature, color in zip(features, colors)]
-    ax.legend(handles=patches, loc="best")
+
+    # ax.legend(handles=patches, loc="best")
+    ax.legend(handles=patches, loc="upper left", bbox_to_anchor=(1, 1), borderaxespad=0.)
 
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
     ax.set_title("Loadings")
 
     plt.grid()
-    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/PCA_loadings.png")
+    plt.tight_layout()
+    plt.savefig(f"img/features/{date}_{market_segment_id}_{security_id}/PCA_loadings.png", dpi=300, bbox_inches='tight')
     plt.show()
 
 
