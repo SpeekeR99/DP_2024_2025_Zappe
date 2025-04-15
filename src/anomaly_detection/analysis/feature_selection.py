@@ -14,7 +14,7 @@ from sklearn.ensemble import IsolationForest
 # https://github.com/britojr/diffi.git
 from lib.diffi.diffi.diffi import diffi_score
 
-from src.anomaly_detection.data.dataloader import load_data
+from src.anomaly_detection.data.dataloader import load_data, load_data_reduced_dimensions
 from src.anomaly_detection.analysis.visuals import plot_feat_corr, plot_pareto, plot_loadings, plot_feat_imp
 from src.anomaly_detection.utils import WANTED_FEATURES
 
@@ -31,6 +31,9 @@ def main(data_file_info):
 
     # Load the data
     data = load_data(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    features = WANTED_FEATURES
+    # data = load_data_reduced_dimensions(date=DATE, market_segment_id=MARKET_SEGMENT_ID, security_id=SECURITY_ID, relevant_features=WANTED_FEATURES)
+    # features = data.columns.tolist()
 
     # Transform the data to numpy and drop NaN values
     data_numpy = data.dropna().to_numpy()
@@ -56,11 +59,12 @@ def main(data_file_info):
 
     # Check if the feature importance has already been calculated
     if not os.path.exists(f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_feature_importance.pkl"):
+    # if not os.path.exists(f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_dim_reduced_feature_importance.pkl"):
         # Calculate the feature importance a lot of times (to get a more stable result)
         iter_num = 100
         feature_importance = {}  # Prepare dict for results
-        for i in range(len(WANTED_FEATURES)):
-            feature_importance[WANTED_FEATURES[i]] = []
+        for i in range(len(features)):
+            feature_importance[features[i]] = []
 
         for i in range(iter_num):
             print(i)
@@ -70,14 +74,16 @@ def main(data_file_info):
 
             # Save the feature importance
             for j in range(len(feat_imp)):
-                feature_importance[WANTED_FEATURES[j]].append(feat_imp[j])
+                feature_importance[features[j]].append(feat_imp[j])
 
         # Save the feature importance values
         with open(f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_feature_importance.pkl", "wb") as fp:
+        # with open(f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_dim_reduced_feature_importance.pkl", "wb") as fp:
             pickle.dump(feature_importance, fp)
     else:
         # Load the feature importance values
         with open(f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_feature_importance.pkl", "rb") as fp:
+        # with open(f"data/{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_dim_reduced_feature_importance.pkl", "rb") as fp:
             feature_importance = pickle.load(fp)
 
     # Throw away "crazy" big outliers
@@ -85,7 +91,7 @@ def main(data_file_info):
         feature_importance[feature] = [x for x in feature_importance[feature] if x < 50.0]
 
     # Plot the feature importance
-    plot_feat_imp(DATE, MARKET_SEGMENT_ID, SECURITY_ID, feature_importance, WANTED_FEATURES)
+    plot_feat_imp(DATE, MARKET_SEGMENT_ID, SECURITY_ID, feature_importance, features)
 
     # Calculate the mean and std of the feature importance
     for feature in feature_importance:
