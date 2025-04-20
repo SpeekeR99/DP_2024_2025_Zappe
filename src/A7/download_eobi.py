@@ -1,5 +1,9 @@
-import time
+import os
 import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+
+import time
 from datetime import datetime
 import json
 import requests
@@ -18,18 +22,18 @@ MARKET_SEGMENT_ID = sys.argv[3]
 # SECURITY_ID = "4128839"
 SECURITY_ID = sys.argv[4]
 
-userId = "zapped99@ntis.zcu.cz"
-with open('../../A7/process-eobi-data/a7token.txt', 'r') as file:
+userId = "zapped99@ntis.zcu.cz"  # Change this to your user ID
+with open("a7token.txt", "r") as file:  # Change this to your token file
     API_TOKEN = file.read().rstrip()
 
-url = 'https://a7.deutsche-boerse.com/api/v1/'
-header = {'Authorization': 'Bearer ' + API_TOKEN}
+url = "https://a7.deutsche-boerse.com/api/v1/"
+header = {"Authorization": "Bearer " + API_TOKEN}
 
 last_time = str(int(datetime.strptime(DATE, "%Y%m%d").replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000 * 1000 * 1000))
 
 part = 0
 
-fp = open(f"{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_detailed.json", "w")
+fp = open(f"data/{MARKET_ID}_{DATE}_{MARKET_SEGMENT_ID}_{SECURITY_ID}_detailed.json", "w")
 fp.write("[\n")
 while True:
     request = f"eobi/{MARKET_ID}/{DATE}/{MARKET_SEGMENT_ID}/{SECURITY_ID}?mode=reference&limit=1000000&from={last_time}"
