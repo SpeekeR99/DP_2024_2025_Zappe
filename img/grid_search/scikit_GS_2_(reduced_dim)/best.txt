@@ -1,0 +1,10 @@
+IF:
+n_estimators = 100
+max_samples  = 0.1
+max_features = 0.5
+
+OCSVM:
+gamma = scale
+
+LOF:
+n_neighbors = 32

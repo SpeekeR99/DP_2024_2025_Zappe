@@ -1,0 +1,15 @@
+FFNN (Trainable Params: 461):
+batch_size    = 32
+learning_rate = 1e-3
+latent_dim    = 8
+
+CNN (Trainable Params: 785):
+batch_size    = 32
+learning_rate = 1e-3
+latent_dim    = 8
+seq_len       = 64
+
+Transformer (Trainable Params: 838 765):
+batch_size    = 64
+learning_rate = 1e-4
+seq_len       = 32
