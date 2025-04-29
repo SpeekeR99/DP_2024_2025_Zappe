@@ -1,15 +1,33 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+
 import json
 
+# Default values
 MARKET_ID = "XEUR"
-# DATE = "20210104"
 DATE = "20191202"
-# MARKET_SEGMENT_ID = "691"
 MARKET_SEGMENT_ID = "688"
-# SECURITY_ID = "5315926"
 SECURITY_ID = "4128839"
+
+# User defined values
+if len(sys.argv) == 5:
+    MARKET_ID = sys.argv[1]
+    DATE = sys.argv[2]
+    MARKET_SEGMENT_ID = sys.argv[3]
+    SECURITY_ID = sys.argv[4]
 
 
 def parse_lobster(part, fp, levels=30, part_one=False):
+    """
+    Parse the order book data from JSON format to CSV format
+    :param part: Which part of the downloaded data to parse
+    :param fp: File pointer to write the data to
+    :param levels: Levels of the order book to parse
+    :param part_one: If this is the first part of the data, write the header
+    """
+    # If this is the first part of the data, write the header
     if part_one:
         header = "Time,"
         for i in range(levels):
@@ -17,6 +35,7 @@ def parse_lobster(part, fp, levels=30, part_one=False):
         header = header[:-1]
         fp.write(f"{header}\n")
 
+    # Parse the data
     for i, entry in enumerate(part):
         ask_bid_zip = f"{entry['Timestamp']},"
 

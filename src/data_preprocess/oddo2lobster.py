@@ -4,20 +4,28 @@
 # |                                                                                                    - Dominik Zappe |
 # └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+import os
 import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+
 import time
 import heapq
 import csv
 import pandas as pd
 
-print(sys.argv)
+# Default values
 DATE = "20191202"
-# DATE = sys.argv[1]
 INSTRUMENT = "FGBL"
-# MARKET_ID = sys.argv[2]
 SECURITY_ID = "4128839"
-# SECURITY_ID = sys.argv[3]
 
+# User defined values
+if len(sys.argv) == 4:
+    DATE = sys.argv[1]
+    INSTRUMENT = sys.argv[2]
+    SECURITY_ID = sys.argv[3]
+
+# Input and output file paths
 INPUT_FILE_PATH = f"data/{DATE}-{INSTRUMENT}-{SECURITY_ID}-ob.csv"
 OUTPUT_FILE_PATH = f"data/lobster_test.csv"
 
