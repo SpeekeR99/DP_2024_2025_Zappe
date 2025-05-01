@@ -49,8 +49,8 @@ for input_file in input_files:
     # Add ~ before every \ref
     content = re.sub(r"\s+\\ref", r"~\\ref", content)
 
-    # Add ~ after every tj., tzv., tzn., např.
-    content = re.sub(r"\s+(tj\.|tzv\.|tzn\.|např\.)\s+", r" \1~", content)
+    # Add ~ after every tj., tzv., tzn., např., resp., atd., apod., aj., mj., př.
+    content = re.sub(r"\s+(tj\.|tzv\.|tzn\.|např\.|resp\.|atd\.|apod\.|aj\.|mj\.|př\.)\s+", r" \1~", content)
 
     # Add ~ around every --
     content = re.sub(r"\s+--\s+", r"~--~", content)
