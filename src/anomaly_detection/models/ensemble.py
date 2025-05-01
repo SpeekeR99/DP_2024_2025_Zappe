@@ -73,7 +73,8 @@ def main(config, data_file_info):
     axis_alphas = []
     amaxes = []
     for config in configs:
-        y_pred, y_score, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
+        lower_is_better = False if config["model_type"] in ["if", "ocsvm", "lof"] else True
+        y_pred, y_score, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, lower_is_better=lower_is_better)
         if len(y_score) != len(data_numpy):
             print(f"Warning: The length of the scores ({len(y_score)}) does not match the length of the data ({len(data_numpy)}).")
             y_pred = y_pred[:len(data_numpy)]

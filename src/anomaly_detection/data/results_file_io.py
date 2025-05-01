@@ -3,8 +3,10 @@ import sys
 import json
 import numpy as np
 
+from src.anomaly_detection.data.result_transform import transform_ys
 
-def store_results(date, market_segment_id, security_id, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax):
+
+def store_results(date, market_segment_id, security_id, config, y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax):
     """
     Store the results
     :param date: Date of the data
@@ -29,9 +31,7 @@ def store_results(date, market_segment_id, security_id, config, y_pred, y_scores
     # Prepare data for storage
     config_string = "_".join([f"{k}={v}" for k, v in config.items()])
     store = {
-        "y_pred": y_pred.tolist(),
         "y_scores": y_scores.tolist(),
-        "anomaly_proba": anomaly_proba.tolist(),
         "em_val": float(em_val),
         "mv_val": float(mv_val),
         "em_curve": em_curve.tolist(),
@@ -46,14 +46,15 @@ def store_results(date, market_segment_id, security_id, config, y_pred, y_scores
         json.dump(store, fp)
 
 
-def load_results(date, market_segment_id, security_id, config):
+def load_results(date, market_segment_id, security_id, config, lower_is_better=True):
     """
     Load the results
     :param date: Date of the data
     :param market_segment_id: Market segment ID
     :param security_id: Security ID
     :param config: Configuration of the model
-    :return:
+    :param lower_is_better: Whether lower is better (for anomaly detection)
+    :return: y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax
     """
     # Check if the results exist
     config_string = "_".join([f"{k}={v}" for k, v in config.items()])
@@ -69,9 +70,7 @@ def load_results(date, market_segment_id, security_id, config):
         store = json.load(fp)
 
     # Prepare the results into correct formats
-    y_pred = np.array(store["y_pred"])
     y_scores = np.array(store["y_scores"])
-    anomaly_proba = np.array(store["anomaly_proba"])
     em_val = store["em_val"]
     mv_val = store["mv_val"]
     em_curve = np.array(store["em_curve"])
@@ -79,5 +78,7 @@ def load_results(date, market_segment_id, security_id, config):
     t = np.array(store["t"])
     axis_alpha = np.array(store["axis_alpha"])
     amax = store["amax"]
+
+    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01, lower_is_better=lower_is_better)
 
     return y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax

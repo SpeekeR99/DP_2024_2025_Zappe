@@ -405,13 +405,11 @@ def main(config, data_file_info):
         y_scores = undo_sequences(torch.tensor(y_scores), seq_len=seq_len)
     # !!! ----------------------------------- Only relevant for CNN/Transformer ------------------------------------ !!!
 
-    y_pred, anomaly_proba = transform_ys(y_scores, contamination=0.01, lower_is_better=True)
-
     # Dump the raw results to results folder
-    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)
+    store_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, y_scores, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax)
 
     # # Load results (just for reassurance that the function works and that the results are stored correctly)
-    # y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config)
+    # y_pred, y_scores, anomaly_proba, em_val, mv_val, em_curve, mv_curve, t, axis_alpha, amax = load_results(DATE, MARKET_SEGMENT_ID, SECURITY_ID, config, lower_is_better=True)
     #
     # # Prepare data for plots
     # print("Plotting the results...")
