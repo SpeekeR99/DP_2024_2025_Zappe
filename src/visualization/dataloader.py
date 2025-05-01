@@ -6,6 +6,9 @@
 import os
 import numpy as np
 import pandas as pd
+import json
+
+from src.anomaly_detection.data.result_transform import transform_ys
 
 
 # Minute in seconds (60 seconds)
@@ -39,22 +42,77 @@ def load_data(date, market_segment_id, security, level_depth=1):
     return data
 
 
+def load_ensemble_results(date, market_segment_id, security):
+    """
+    Load the ensemble results from the given date, market segment ID, and security
+    Ensemble meaning results of Isolation Forest, FFNN Autoencoder, CNN Autoencoder, and Transformer Autoencoder
+    :param date: Date of the data to load
+    :param market_segment_id: Market segment ID of the data to load
+    :param security: Security ID of the data to load
+    :return: y_pred, y_scores, anomaly_proba
+    """
+    # Check if the results exist
+    res_dir = f"res/{date}_{market_segment_id}_{security}"
+    if not os.path.exists(os.path.join(res_dir)):
+        return None
+    files = os.listdir(res_dir)
+    if not files or files == []:
+        return None
+
+    # Load all the model predictions
+    temp_results = []
+    for file in files:
+        if file.endswith(".json") and "if_" in file or "ffnn_" in file or "cnn_" in file or "transformer_" in file:
+            # Load  the results
+            with open(os.path.join(res_dir, file), "r") as fp:
+                store = json.load(fp)
+                # All we care about is the y_scores -> y_pred and anomaly_proba is calculated based on that
+                y_scores = np.array(store["y_scores"])
+
+                # Autoencoder models take anomaly score as loss (lower is better)
+                # Scikit-learn models have different anomaly score, where higher is better
+                if "if_" in file:
+                    y_scores = -y_scores  # Invert the scores, so that we can later use mean across the models
+
+                # Normalize the scores so we can take a "meaningful" average of them
+                y_scores = (y_scores - y_scores.min()) / (y_scores.max() - y_scores.min())
+                temp_results.append(y_scores)
+
+    # If there are some results that have different lengths, trim them
+    majority_len = np.median([len(x) for x in temp_results])
+    temp_results = [x[:int(majority_len)] for x in temp_results]
+
+    # Create the ensemble by averaging the scores
+    y_scores_ensemble = np.mean(temp_results, axis=0)
+    y_pred_ensemble, anomaly_proba_ensemble = transform_ys(y_scores_ensemble, contamination=0.01, lower_is_better=True)
+
+    # Threshold the ensemble model to only keep the MOST sure predictions of anomalies
+    # Keep only the predictions, that are 99.9 % sure or more
+    threshold = np.percentile(y_scores_ensemble, 99.9)
+    y_pred_ensemble[anomaly_proba_ensemble < threshold] = 1
+    anomaly_proba_ensemble[anomaly_proba_ensemble < threshold] = 0
+
+    return y_pred_ensemble, anomaly_proba_ensemble
+
+
 def load_all_data(level_depth=1):
     """
     Load all data from the data folder
     :param level_depth: Level depth of prices to load (default 1 -- Top of the Book)
-    :return: List of DataFrames with the data and a list of names for each DataFrame
+    :return: List of DataFrames with the data and a list of names for each DataFrame and results of anomaly detections
     """
     data = []
     names = []
+    detections = []
 
     for file in os.listdir("data"):
         if file.endswith("_lobster_augmented.csv"):
             date, market_segment_id, security = file.split("_")[:3]
             names.append(f"{date}_{market_segment_id}_{security}")
             data.append(load_data(date, market_segment_id, security, level_depth=level_depth))
+            detections.append(load_ensemble_results(date, market_segment_id, security))
 
-    return data, names
+    return data, names, detections
 
 
 def aggregate_data(all_data, metric="Ask Price 1", aggregation=np.mean, time_window=3600):
