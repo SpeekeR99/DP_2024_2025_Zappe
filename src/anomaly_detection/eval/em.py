@@ -1,3 +1,10 @@
+# ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+# | This code is basically just a copy of the em.py file from the https://github.com/ngoix/EMMV_benchmarks.git         |
+# | repository. The only change is in the print statement! Python 2.x -> Python 3.x                                    |
+# | I am not the author of this code!                                                                                  |
+# |                                                                                                    - Dominik Zappe |
+# └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
 import numpy as np
 from sklearn.metrics import auc
 # https://github.com/ngoix/EMMV_benchmarks.git

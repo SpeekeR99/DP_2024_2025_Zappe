@@ -33,6 +33,7 @@ def evaluate(model, data_train, data_test, n_generated=100000, alpha_min=0.9, al
     axis_alpha = np.arange(alpha_min, alpha_max, 0.0001)
     unif = np.random.uniform(lim_inf, lim_sup, size=(n_generated, n_features))  # Generate uniform samples
 
+    # The model is already trained, so there is no need to fit it again
     # model.fit(data_train)  # Fit the model
 
     # Compute the scores
@@ -96,6 +97,7 @@ def evaluate_torch(model, train_loader, test_loader, y_scores, n_generated=10000
     unif = torch.tensor(unif, dtype=torch.float32).to(device)
 
     # Compute the scores
+    # The model is already trained, so there is no need to fit it here (again)
     s_X = model.decision_function(X_test, contamination=0.01, y_scores=y_scores)
     s_unif = model.decision_function(unif, contamination=0.01)
     if len(s_X.shape) == 2:
