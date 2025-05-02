@@ -37,8 +37,8 @@ The proposed solution efficiently identifies high-risk areas for subsequent expe
 1. **Clone the repository** to your local machine using the following command:
 
 ```bash
-    git clone --recursive https://github.com/SpeekeR99/DP_2024_2025_Zappe.git
-    cd DP_2024_2025_Zappe
+git clone --recursive https://github.com/SpeekeR99/DP_2024_2025_Zappe.git
+cd DP_2024_2025_Zappe
 ```
 
 2. **Create a virtual environment** and **install dependencies**
@@ -136,8 +136,8 @@ Navržené řešení efektivně identifikuje rizikové oblasti pro následnou ex
 1. **Naklonujte repozitář** do lokálního stroje pomocí příkazu:
 
 ```bash
-    git clone --recursive https://github.com/SpeekeR99/DP_2024_2025_Zappe.git
-    cd DP_2024_2025_Zappe
+git clone --recursive https://github.com/SpeekeR99/DP_2024_2025_Zappe.git
+cd DP_2024_2025_Zappe
 ```
 
 2. **Vytvořte virtuální prostředí** a **nainstalujte závislosti**
