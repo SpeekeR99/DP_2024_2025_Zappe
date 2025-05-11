@@ -7,7 +7,7 @@ This repository contains the source code and resources for the master's thesis *
 Modern financial markets are fast-paced, complex, and increasingly targeted by sophisticated forms of manipulation.
 This thesis focuses on anomaly detection in time series derived from limit order books, aiming to identify manipulative behavior known as **spoofing**.
 Due to the absence of annotated data, unsupervised machine learning methods are applied to real historical data.
-Six methods were implemented:
+Six methods are implemented:
 
 - Isolation Forest
 - Local Outlier Factor
@@ -16,8 +16,8 @@ Six methods were implemented:
 - Convolutional Autoencoder
 - Transformer-based Autoencoder
 
-The models were evaluated using the less commonly known metrics **Excess Mass** and **Mass Volume**, with the Isolation Forest and Transformer models achieving the best results.
-By combining the most effective models, a robust tool was created, capable of detecting suspicious behavior without manual annotation.
+The models are evaluated using the less commonly known metrics **Excess Mass** and **Mass Volume**, with the Isolation Forest and Transformer models achieving the best results.
+By combining the most effective models, a robust tool is created, capable of detecting suspicious behavior without manual annotation.
 The proposed solution efficiently identifies high-risk areas for subsequent expert analysis and thus offers a practical contribution to detecting illicit practices in financial markets.
 
 ## 🛠️ Technologies Used
@@ -106,7 +106,7 @@ Tento repozitář obsahuje zdrojový kód a související materiály k diplomov�
 Moderní finanční trhy jsou rychlé, komplexní a stále častěji se stávají cílem sofistikovaných forem manipulace.
 Tato práce se zaměřuje na detekci anomálií v časových řadách odvozených z knih limitních objednávek s cílem rozpoznat manipulativní chování zvané **spoofing**.
 Vzhledem k absenci anotovaných dat jsou použity metody strojového učení bez učitele aplikované na reálná historická data.
-Bylo implementováno šest metod:
+V práci je implementováno šest metod:
 
 - izolační les
 - lokální faktor odlehlosti
@@ -115,7 +115,7 @@ Bylo implementováno šest metod:
 - konvoluční autoenkodér
 - transformer autoenkodér
 
-Modely byly evaluovány pomocí méně známých metrik **Excess Mass** a **Mass Volume**, přičemž nejlépe si vedly modely izolační les a transformer.
+Modely jsou evaluovány pomocí méně známých metrik **Excess Mass** a **Mass Volume**, přičemž nejlépe si vedou modely izolační les a transformer.
 Kombinací nejvýkonnějších modelů vznikl robustní nástroj schopný odhalit podezřelé chování bez ruční anotace.
 Navržené řešení efektivně identifikuje rizikové oblasti pro následnou expertní analýzu a představuje tak praktický přínos pro detekci nelegálních praktik na finančních trzích.
 
