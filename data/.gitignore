@@ -1,4 +1,5 @@
-# Ignore everything in this directory
+# Ignore everything in this directory (this serves as a directory keep file for git)
 *
-# Except this file
+# Except this file and the README.md
 !.gitignore
+!README.md
